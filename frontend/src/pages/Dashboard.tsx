@@ -160,11 +160,11 @@ const Dashboard: React.FC = () => {
             <CardContent className="space-y-4">
               {/* This is where the real data gets rendered */}
               {renderActivityContent()}
-              <motion.div className="pt-4" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              {/* <motion.div className="pt-4" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                 <AnimatedButton variant="outline" className="w-full" onClick={() => navigate('/history')}>
                   <span>View All Results</span>
                 </AnimatedButton>
-              </motion.div>
+              </motion.div> */}
             </CardContent>
           </Card>
         </motion.div>

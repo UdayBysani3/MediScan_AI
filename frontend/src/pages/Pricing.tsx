@@ -39,7 +39,7 @@ const Pricing: React.FC = () => {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}` // Add token
         },
-        body: JSON.stringify({ amount: plan.price }),
+        body: JSON.stringify({ amount: Number(plan.price) }),
     });
 
       if (!orderResponse.ok) {
