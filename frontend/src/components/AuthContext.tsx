@@ -10,6 +10,8 @@ interface User {
     accountType: 'free' | 'monthly' | 'yearly';
     analysisCount: number;
     maxScans: number;
+    planExpiryDate?: string; // ISO date string when plan expires
+    planPurchaseDate?: string; // ISO date string when plan was purchased
 }
 
 interface AuthContextType {
@@ -32,18 +34,54 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const navigate = useNavigate();
 
     useEffect(() => {
-        const storedToken = localStorage.getItem('mediscan_token');
-        const storedUser = localStorage.getItem('mediscan_user');
-        if (storedToken && storedUser) {
-            setToken(storedToken);
-            setUser(JSON.parse(storedUser));
-        }
-        setIsLoading(false);
+        const validateAndLoadAuth = async () => {
+            const storedToken = localStorage.getItem('mediscan_token');
+            const storedUser = localStorage.getItem('mediscan_user');
+
+            if (storedToken && storedUser) {
+                // Validate token by making a test request
+                try {
+                    const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+                    const response = await fetch(`${apiUrl}/me`, {
+                        headers: { 'Authorization': `Bearer ${storedToken}` }
+                    });
+
+                    if (response.ok) {
+                        // Token is valid
+                        const userData = await response.json();
+                        setToken(storedToken);
+                        setUser(userData);
+                        console.log('✅ Token validated successfully');
+                    } else if (response.status === 401 || response.status === 403) {
+                        // Token is invalid or expired
+                        console.warn('⚠️ Invalid or expired token detected. Clearing...');
+                        localStorage.removeItem('mediscan_token');
+                        localStorage.removeItem('mediscan_user');
+                        setToken(null);
+                        setUser(null);
+                    } else {
+                        // Other error - use cached data but log warning
+                        console.warn(`⚠️ Token validation returned ${response.status}, using cached data`);
+                        setToken(storedToken);
+                        setUser(JSON.parse(storedUser));
+                    }
+                } catch (error) {
+                    // Network error - use cached data
+                    console.warn('⚠️ Token validation failed (network error), using cached data');
+                    setToken(storedToken);
+                    setUser(JSON.parse(storedUser));
+                }
+            }
+
+            setIsLoading(false);
+        };
+
+        validateAndLoadAuth();
     }, []);
 
     const handleAuthSuccess = (userData: User, userToken: string) => {
         const userWithDefaults = { ...userData, maxScans: userData.maxScans || 5 };
-        
+
         localStorage.setItem('mediscan_user', JSON.stringify(userWithDefaults));
         localStorage.setItem('mediscan_token', userToken);
         setUser(userWithDefaults);
@@ -82,7 +120,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setToken(null);
         navigate('/login');
     };
-    
+
     const refreshUser = async () => {
         const storedToken = localStorage.getItem('mediscan_token');
         if (!storedToken) return;

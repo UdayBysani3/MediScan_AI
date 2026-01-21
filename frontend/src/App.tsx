@@ -11,6 +11,7 @@ import Upload from './pages/Upload';
 import Pricing from './pages/Pricing';
 import NotFound from './pages/NotFound';
 import ForgotPassword from './pages/ForgotPassword';
+import { ChatBot } from './components/ChatBot';
 
 const queryClient = new QueryClient();
 
@@ -31,6 +32,7 @@ const App = () => (
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <ChatBot />
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

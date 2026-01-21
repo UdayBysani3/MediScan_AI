@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediScan - Token Test & Fix</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 { color: #333; }
+        .status { padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 16px;
+        }
+        button:hover { background: #0056b3; }
+        .danger { background: #dc3545; }
+        .danger:hover { background: #c82333; }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 MediScan Token Fixer</h1>
+        <p>This tool will help diagnose and fix authentication issues.</p>
+
+        <div id="status"></div>
+
+        <h2>Step 1: Check Current Status</h2>
+        <button onclick="checkStatus()">Check Backend & Token Status</button>
+        <div id="checkResult"></div>
+
+        <h2>Step 2: Fix Token Issues</h2>
+        <button class="danger" onclick="clearToken()">Clear Old Token</button>
+        <button onclick="testLogin()">Test Login</button>
+
+        <h2>Step 3: Test API Connection</h2>
+        <button onclick="testAPI()">Test API Connection</button>
+        <div id="apiResult"></div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5000';
+
+        function showStatus(elementId, message, type = 'info') {
+            const div = document.getElementById(elementId);
+            div.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        async function checkStatus() {
+            showStatus('checkResult', '🔍 Checking status...', 'info');
+
+            let results = [];
+
+            // Check localStorage
+            const token = localStorage.getItem('mediscan_token');
+            const user = localStorage.getItem('mediscan_user');
+
+            if (token) {
+                results.push(`✅ Token found in localStorage (length: ${token.length})`);
+                results.push(`Token preview: ${token.substring(0, 20)}...`);
+            } else {
+                results.push(`❌ No token found in localStorage`);
+            }
+
+            if (user) {
+                results.push(`✅ User data found: ${user}`);
+            } else {
+                results.push(`❌ No user data found`);
+            }
+
+            // Check backend
+            try {
+                const response = await fetch(`${API_URL}/recent-activity`, {
+                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                });
+                
+                results.push(`\n📡 Backend Response:`);
+                results.push(`Status: ${response.status} ${response.statusText}`);
+                results.push(`Content-Type: ${response.headers.get('content-type')}`);
+
+                if (response.status === 401) {
+                    results.push(`⚠️ 401 Unauthorized - Token is missing or invalid`);
+                } else if (response.status === 403) {
+                    results.push(`⚠️ 403 Forbidden - Token is expired or malformed`);
+                } else if (response.status === 200) {
+                    results.push(`✅ 200 OK - Token is valid!`);
+                }
+            } catch (error) {
+                results.push(`❌ Backend Error: ${error.message}`);
+                results.push(`⚠️ Make sure backend is running on port 5000`);
+            }
+
+            showStatus('checkResult', `<pre>${results.join('\n')}</pre>`, 'info');
+        }
+
+        function clearToken() {
+            const confirmed = confirm('This will clear your token and you\'ll need to login again. Continue?');
+            if (confirmed) {
+                localStorage.removeItem('mediscan_token');
+                localStorage.removeItem('mediscan_user');
+                showStatus('status', '✅ Token cleared! Please go to <a href="http://localhost:5173/login">Login page</a> and login again.', 'success');
+            }
+        }
+
+        async function testLogin() {
+            const mobile = prompt('Enter mobile number (10 digits):');
+            const password = prompt('Enter password:');
+
+            if (!mobile || !password) {
+                showStatus('status', '❌ Mobile and password are required', 'error');
+                return;
+            }
+
+            showStatus('status', '🔄 Attempting login...', 'info');
+
+            try {
+                const response = await fetch(`${API_URL}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mobile, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    localStorage.setItem('mediscan_token', data.token);
+                    localStorage.setItem('mediscan_user', JSON.stringify(data.user));
+                    showStatus('status', `✅ Login successful! Token saved. You can now <a href="http://localhost:5173/dashboard">go to dashboard</a>`, 'success');
+                } else {
+                    showStatus('status', `❌ Login failed: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showStatus('status', `❌ Login error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testAPI() {
+            const token = localStorage.getItem('mediscan_token');
+            
+            if (!token) {
+                showStatus('apiResult', '❌ No token found. Please login first.', 'error');
+                return;
+            }
+
+            showStatus('apiResult', '🔄 Testing API with current token...', 'info');
+
+            try {
+                const response = await fetch(`${API_URL}/recent-activity`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                const contentType = response.headers.get('content-type');
+                let data;
+                
+                if (contentType && contentType.includes('application/json')) {
+                    data = await response.json();
+                } else {
+                    data = await response.text();
+                }
+
+                let result = `Status: ${response.status} ${response.statusText}\n`;
+                result += `Content-Type: ${contentType}\n\n`;
+                result += `Response:\n${JSON.stringify(data, null, 2)}`;
+
+                if (response.ok) {
+                    showStatus('apiResult', `<pre>✅ API Test Successful!\n\n${result}</pre>`, 'success');
+                } else {
+                    showStatus('apiResult', `<pre>❌ API Test Failed\n\n${result}</pre>`, 'error');
+                }
+            } catch (error) {
+                showStatus('apiResult', `❌ API Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-check on load
+        window.onload = () => {
+            checkStatus();
+        };
+    </script>
+</body>
+</html>

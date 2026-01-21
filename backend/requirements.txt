@@ -1,2 +1,7 @@
-# Moved from backend/requirements.txt
-# ...existing code...
+Flask
+flask-cors
+tensorflow
+Pillow
+numpy
+os
+io

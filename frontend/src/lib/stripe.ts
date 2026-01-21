@@ -21,38 +21,42 @@ export interface PricingPlan {
   features: string[];
   popular?: boolean;
   stripePriceId: string;
-  scanLimit?: number;
+  scanLimit: number;
+  validityDays: number;
 }
 
 export const pricingPlans: PricingPlan[] = [
   {
     id: 'free',
-    name: 'Free Trial',
+    name: 'Free Plan',
     price: 0,
     currency: '₹',
     interval: 'trial',
     scanLimit: 5,
+    validityDays: 0, // No expiration for free plan
     features: [
-      '5 AI scans total',
+      '5 AI scans (lifetime)',
       'All 3 disease models',
       'Basic support',
-      'Standard resolution results'
+      'Standard resolution results',
+      'No expiration'
     ],
     stripePriceId: ''
   },
   {
     id: 'monthly',
-    name: 'Monthly Plan',
+    name: 'Monthly Pack',
     price: 150,
     currency: '₹',
     interval: 'month',
+    scanLimit: 100,
+    validityDays: 31,
     features: [
-      'Unlimited AI scans',
+      '100 AI scans',
+      'Valid for 31 days',
       'All 3 disease models',
       'Priority support',
       'High-resolution results',
-      'Export reports (PDF)',
-      'Email notifications',
       'Advanced analytics',
       'DPDP Act 2023 compliant storage'
     ],
@@ -61,26 +65,27 @@ export const pricingPlans: PricingPlan[] = [
   },
   {
     id: 'yearly',
-    name: 'Yearly Plan',
-    price: 1200,
+    name: 'Yearly Pack',
+    price: 1500,
     currency: '₹',
     interval: 'year',
+    scanLimit: 5000,
+    validityDays: 365,
     features: [
-      'Unlimited AI scans',
+      '5000 AI scans',
+      'Valid for 365 days',
       'All 3 disease models',
       'Priority support',
       'High-resolution results',
-      'Export reports (PDF)',
-      'Email notifications',
       'Advanced analytics',
       'DPDP Act 2023 compliant storage',
       'API access',
       'Custom model training',
       '24/7 phone support',
-      '2 months free (save ₹300)'
+      'Best value! (₹0.30 per scan)'
     ],
     popular: true,
-    stripePriceId: 'price_yearly_1200'
+    stripePriceId: 'price_yearly_1500'
   }
 ];
 

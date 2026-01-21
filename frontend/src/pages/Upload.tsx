@@ -5,8 +5,8 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/components/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import { DiseaseModel } from '@/lib/models';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { DiseaseModel, getModelById } from '@/lib/models';
 import { comprehensiveMedicalDatabase, normalResultGuidance, getUrgencyColor, getSeverityColor, Doctor, Medication } from '@/lib/comprehensive-medical-data';
 import {
   Upload as UploadIcon,
@@ -26,12 +26,19 @@ import {
   MapPin,
   Calendar,
   Shield,
-  Heart,
+  Stethoscope,
   Activity,
   Pill,
   GraduationCap,
   Languages,
   Star,
+  Eye,
+  Scan,
+  Zap,
+  Award,
+  TrendingUp,
+  Users,
+  ChevronDown,
   DollarSign
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -43,6 +50,7 @@ import { PricingPlan } from '@/lib/stripe';
 import { BackgroundBeams } from '@/components/ui/background-beams';
 import { TextGenerateEffect } from '@/components/ui/text-generate-effect';
 import { EnhancedLoader } from '@/components/ui/enhanced-loader';
+import { CardContainer, CardBody, CardItem } from '@/components/ui/3d-card';
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 interface ScanResult {
   prediction: string;
@@ -66,8 +74,9 @@ const toTitleCase = (str: string): string => {
     .join(' ');           // Join the words back together with spaces
 };
 const Upload: React.FC = () => {
-  const { user,token,refreshUser } = useAuth();
+  const { user, token, refreshUser } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [currentStep, setCurrentStep] = useState<'model' | 'upload' | 'analysis'>('model');
   const [selectedModel, setSelectedModel] = useState<DiseaseModel | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -85,6 +94,17 @@ const Upload: React.FC = () => {
       navigate('/login');
     }
   }, [user, navigate]);
+
+  // Auto-select model from URL parameter
+  React.useEffect(() => {
+    const modelParam = searchParams.get('model');
+    if (modelParam && !selectedModel) {
+      const model = getModelById(modelParam);
+      if (model) {
+        setSelectedModel(model);
+      }
+    }
+  }, [searchParams, selectedModel]);
 
   const handleCBCAnalyze = () => {
     if (!cbcValues.wbc || !cbcValues.rbc || !cbcValues.platelets) {
@@ -197,9 +217,9 @@ const Upload: React.FC = () => {
       formData.append('modelId', selectedModel.id);
 
       const response = await fetch(`${API_URL}/analyze`, {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${token}` },
-          body: formData,
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData,
       });
 
       if (!response.ok) {
@@ -248,6 +268,60 @@ const Upload: React.FC = () => {
   const getResultIcon = (prediction: string) => {
     if (prediction === 'Normal' || prediction === 'No-Tumor') return <CheckCircle className="h-6 w-6 text-green-600" />;
     return <AlertTriangle className="h-6 w-6 text-red-600" />;
+  };
+
+  // NEW: Severity calculation based on AI confidence level
+  const calculateSeverity = (confidence: number, prediction: string): {
+    level: string;
+    color: string;
+    bgColor: string;
+    borderColor: string;
+    description: string;
+    icon: React.ReactElement;
+  } => {
+    const isNormal = prediction === 'Normal' || prediction === 'No-Tumor';
+    const confidencePercent = confidence * 100;
+
+    if (isNormal) {
+      return {
+        level: 'NORMAL',
+        color: 'text-green-700',
+        bgColor: 'bg-green-50',
+        borderColor: 'border-green-300',
+        description: 'No immediate concerns detected',
+        icon: <CheckCircle className="h-5 w-5 text-green-600" />
+      };
+    }
+
+    // For abnormal results, severity increases with confidence
+    if (confidencePercent > 80) {
+      return {
+        level: 'HIGH SEVERITY',
+        color: 'text-red-700',
+        bgColor: 'bg-red-50',
+        borderColor: 'border-red-400',
+        description: 'High confidence detection - Consult a specialist immediately',
+        icon: <AlertTriangle className="h-5 w-5 text-red-600" />
+      };
+    } else if (confidencePercent >= 60) {
+      return {
+        level: 'MODERATE SEVERITY',
+        color: 'text-orange-700',
+        bgColor: 'bg-orange-50',
+        borderColor: 'border-orange-400',
+        description: 'Moderate confidence - Schedule an appointment soon',
+        icon: <AlertTriangle className="h-5 w-5 text-orange-600" />
+      };
+    } else {
+      return {
+        level: 'LOW SEVERITY',
+        color: 'text-yellow-700',
+        bgColor: 'bg-yellow-50',
+        borderColor: 'border-yellow-400',
+        description: 'Lower confidence - Monitor symptoms and consult if needed',
+        icon: <Clock className="h-5 w-5 text-yellow-600" />
+      };
+    }
   };
 
   const resetUpload = () => {
@@ -436,7 +510,7 @@ const Upload: React.FC = () => {
                 <ul className="text-sm text-green-700 space-y-1">
                   {normalResultGuidance.recommendations.slice(0, 5).map((recommendation, index) => (
                     <li key={index} className="flex items-start">
-                      <Heart className="h-3 w-3 text-green-600 mr-2 mt-1 flex-shrink-0" />
+                      <Stethoscope className="h-3 w-3 text-green-600 mr-2 mt-1 flex-shrink-0" />
                       {recommendation}
                     </li>
                   ))}
@@ -461,20 +535,20 @@ const Upload: React.FC = () => {
           transition={{ duration: 0.4, delay: 0.2 }}
           className="space-y-6"
         >
-          {/* Urgency Alert */}
-          <div className={`p-4 rounded-xl border-2 ${getUrgencyColor(diseaseInfo.urgency)}`}>
+          {/* Urgency Alert with Confidence-Based Severity */}
+          <div className={`p-4 rounded-xl border-2 ${calculateSeverity(result.confidence, result.prediction).bgColor} ${calculateSeverity(result.confidence, result.prediction).borderColor}`}>
             <div className="flex items-center space-x-3 mb-2">
-              <AlertTriangle className="h-5 w-5" />
-              <span className="font-semibold">
+              {calculateSeverity(result.confidence, result.prediction).icon}
+              <span className={`font-semibold ${calculateSeverity(result.confidence, result.prediction).color}`}>
                 {diseaseInfo.urgency === 'emergency' ? 'EMERGENCY - Seek Immediate Care' :
                   diseaseInfo.urgency === 'urgent' ? 'URGENT - Schedule Appointment Soon' :
                     'ROUTINE - Schedule Regular Appointment'}
               </span>
             </div>
-            <p className="text-sm">
-              Severity: <span className={`font-medium ${getSeverityColor(diseaseInfo.severity)}`}>
-                {diseaseInfo.severity.toUpperCase()}
-              </span>
+            <p className={`text-sm ${calculateSeverity(result.confidence, result.prediction).color}`}>
+              Severity: <span className="font-medium">
+                {calculateSeverity(result.confidence, result.prediction).level}
+              </span> - {calculateSeverity(result.confidence, result.prediction).description}
             </p>
           </div>
 
@@ -619,7 +693,7 @@ const Upload: React.FC = () => {
           {/* Lifestyle Recommendations */}
           <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-6">
             <h4 className="font-semibold text-indigo-900 mb-4 flex items-center">
-              <Heart className="h-5 w-5 mr-2" />
+              <Stethoscope className="h-5 w-5 mr-2" />
               Lifestyle & Recovery Guidelines
             </h4>
             <div className="grid md:grid-cols-2 gap-4">
@@ -671,15 +745,17 @@ const Upload: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 relative">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-teal-50/20 relative pt-20">
       <Navbar />
 
-      {/* Background Effects */}
-      <div className="absolute inset-0 overflow-hidden">
-        <BackgroundBeams className="opacity-10" />
+      {/* Enhanced Background Effects */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 right-10 w-96 h-96 bg-blue-200/30 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-20 left-10 w-96 h-96 bg-teal-200/30 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-to-r from-blue-100/20 to-green-100/20 rounded-full blur-3xl"></div>
       </div>
 
-      <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mb-16">
         {/* Header */}
         <motion.div
           className="mb-8"
@@ -698,17 +774,17 @@ const Upload: React.FC = () => {
 
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 via-green-600 to-red-600 bg-clip-text text-transparent mb-2">
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-teal-600 bg-clip-text text-transparent mb-2">
                 AI Medical Analysis
               </h1>
               <TextGenerateEffect
                 words={stepDescriptions[currentStep]}
-                className="text-lg text-gray-600"
+                className="text-lg text-slate-600"
               />
             </div>
 
             <div className="flex items-center space-x-4">
-              <Badge variant="secondary" className="bg-blue-100 text-blue-800 px-4 py-2">
+              <Badge variant="secondary" className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-2 font-semibold">
                 <Sparkles className="h-4 w-4 mr-2" />
                 {scansRemaining} scans remaining
               </Badge>
@@ -726,10 +802,10 @@ const Upload: React.FC = () => {
               <div key={step} className="flex items-center">
                 <motion.div
                   className={`flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-300 ${currentStep === step
-                      ? 'bg-blue-600 border-blue-600 text-white'
-                      : index < ['model', 'upload', 'analysis'].indexOf(currentStep)
-                        ? 'bg-green-600 border-green-600 text-white'
-                        : 'border-gray-300 text-gray-400'
+                    ? 'bg-blue-600 border-blue-600 text-white'
+                    : index < ['model', 'upload', 'analysis'].indexOf(currentStep)
+                      ? 'bg-green-600 border-green-600 text-white'
+                      : 'border-gray-300 text-gray-400'
                     }`}
                   whileHover={{ scale: 1.1 }}
                   transition={{ type: "spring", stiffness: 300 }}
@@ -742,8 +818,8 @@ const Upload: React.FC = () => {
                 </motion.div>
                 {index < 2 && (
                   <div className={`w-16 h-0.5 mx-2 transition-all duration-300 ${index < ['model', 'upload', 'analysis'].indexOf(currentStep)
-                      ? 'bg-green-600'
-                      : 'bg-gray-300'
+                    ? 'bg-green-600'
+                    : 'bg-gray-300'
                     }`} />
                 )}
               </div>
@@ -761,7 +837,7 @@ const Upload: React.FC = () => {
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.3 }}
             >
-              <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+              <Card className="shadow-2xl border-2 border-white/60 bg-white/95 backdrop-blur-xl">
                 <CardContent className="p-8">
                   <ModelSelector
                     onModelSelect={handleModelSelect}
@@ -776,13 +852,13 @@ const Upload: React.FC = () => {
                       transition={{ duration: 0.4 }}
                     >
                       <motion.div
-                        whileHover={{ scale: 1.05 }}
+                        whileHover={{ scale: 1.05, y: -2 }}
                         whileTap={{ scale: 0.95 }}
                       >
                         <Button
                           onClick={handleContinueToUpload}
                           size="lg"
-                          className="bg-gradient-to-r from-blue-600 via-green-600 to-red-600 hover:from-blue-700 hover:via-green-700 hover:to-red-700 px-8 py-6 text-lg"
+                          className="bg-gradient-to-r from-blue-600 via-teal-600 to-green-600 hover:from-blue-700 hover:via-teal-700 hover:to-green-700 px-10 py-7 text-lg font-semibold shadow-2xl hover:shadow-blue-500/50 transition-all"
                         >
                           {selectedModel.id === 'bmi-calculator' ? (
                             <>
@@ -866,22 +942,22 @@ const Upload: React.FC = () => {
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.3 }}
             >
-              <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-                <CardHeader className="pb-6">
+              <Card className="shadow-2xl border-2 border-white/60 bg-white/95 backdrop-blur-xl">
+                <CardHeader className="pb-6 border-b border-slate-100">
                   <div className="flex items-center justify-between">
                     <div>
-                      <CardTitle className="flex items-center space-x-3 text-2xl">
-                        <Camera className="h-6 w-6" />
-                        <span>Upload Medical Image</span>
+                      <CardTitle className="flex items-center space-x-3 text-3xl font-bold">
+                        <Camera className="h-7 w-7 text-blue-600" />
+                        <span className="bg-gradient-to-r from-blue-600 to-teal-600 bg-clip-text text-transparent">Upload Medical Image</span>
                       </CardTitle>
-                      <CardDescription className="text-base mt-2">
+                      <CardDescription className="text-base mt-3 text-slate-600">
                         Upload your {selectedModel?.supportedFormats?.join(', ').toLowerCase() || 'medical images'} for {selectedModel?.name} analysis
                       </CardDescription>
                     </div>
                     <Button
                       variant="outline"
                       onClick={() => setCurrentStep('model')}
-                      className="flex items-center space-x-2"
+                      className="flex items-center space-x-2 border-2 hover:border-blue-300 hover:bg-blue-50/50"
                     >
                       <ArrowLeft className="h-4 w-4" />
                       <span>Change Model</span>
@@ -889,65 +965,89 @@ const Upload: React.FC = () => {
                   </div>
                 </CardHeader>
 
-                <CardContent className="space-y-6">
+                <CardContent className="space-y-6 p-8">
                   {/* Selected Model Info */}
                   <motion.div
-                    className="bg-gradient-to-r from-blue-50 to-green-50 border border-blue-200 rounded-lg p-4"
+                    className="bg-gradient-to-r from-blue-50 via-teal-50 to-green-50 border-2 border-blue-200/60 rounded-2xl p-5 shadow-inner"
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.4 }}
                   >
                     <div className="flex items-center space-x-4">
-                      <div className="text-3xl">{selectedModel?.icon}</div>
+                      <div className="text-4xl">{selectedModel?.icon}</div>
                       <div>
-                        <h3 className="font-semibold text-blue-900">{selectedModel?.name}</h3>
-                        <p className="text-blue-700 text-sm">{selectedModel?.accuracy}% accuracy • {selectedModel?.trainingData}</p>
+                        <h3 className="font-bold text-lg text-slate-900">{selectedModel?.name}</h3>
+                        <p className="text-slate-600 text-sm font-medium">{selectedModel?.accuracy}% accuracy • {selectedModel?.trainingData}</p>
                       </div>
                     </div>
                   </motion.div>
 
                   {!selectedFile ? (
-                    <motion.div
-                      className="border-2 border-dashed border-gray-300 rounded-xl p-12 text-center hover:border-blue-400 transition-all duration-300 cursor-pointer bg-gradient-to-br from-gray-50 to-white"
-                      onDrop={handleDrop}
-                      onDragOver={(e) => e.preventDefault()}
-                      onClick={() => document.getElementById('file-input')?.click()}
-                      whileHover={{ scale: 1.02 }}
-                      transition={{ type: "spring", stiffness: 300 }}
-                    >
-                      <FileImage className="h-16 w-16 text-gray-400 mx-auto mb-6" />
-                      <h3 className="text-xl font-medium text-gray-900 mb-3">
-                        Upload Your Medical Image
-                      </h3>
-                      <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                        Drag and drop your medical image here, or click to browse.
-                        Supported formats: {selectedModel?.supportedFormats?.join(', ').toUpperCase() || 'JPEG, PNG'}. Max size: 10MB
-                      </p>
-                      <Button size="lg" variant="outline" className="px-8">
-                        <UploadIcon className="mr-2 h-5 w-5" />
-                        Choose File
-                      </Button>
-                      <input
-                        id="file-input"
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFileInput}
-                        className="hidden"
-                      />
-                    </motion.div>
+                    <div className="relative group">
+                      {/* Decorative gradient border */}
+                      <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-green-600 rounded-2xl opacity-20 group-hover:opacity-40 blur transition duration-300"></div>
+
+                      {/* Main upload area */}
+                      <div
+                        className="relative border-2 border-dashed border-slate-300 rounded-2xl p-12 text-center hover:border-blue-400 transition-all duration-300 cursor-pointer bg-white hover:bg-gradient-to-br hover:from-blue-50/50 hover:via-white hover:to-green-50/50"
+                        onDrop={handleDrop}
+                        onDragOver={(e) => e.preventDefault()}
+                        onClick={() => document.getElementById('file-input')?.click()}
+                      >
+                        {/* Floating icon */}
+                        <motion.div
+                          className="relative mb-6"
+                          animate={{ y: [0, -10, 0] }}
+                          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                        >
+                          <div className="absolute inset-0 bg-blue-500/20 blur-2xl rounded-full"></div>
+                          <div className="relative bg-gradient-to-br from-blue-100 to-green-100 p-6 rounded-2xl inline-block">
+                            <UploadIcon className="h-16 w-16 text-blue-600" />
+                          </div>
+                        </motion.div>
+
+                        {/* Title */}
+                        <h3 className="text-2xl font-bold text-slate-900 mb-3">
+                          Drop your medical image here
+                        </h3>
+
+                        {/* Description */}
+                        <p className="text-slate-600 mb-6 max-w-md mx-auto text-base">
+                          or click to browse from your device
+                        </p>
+
+                        {/* Format info badge */}
+                        <div className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 border border-slate-200 rounded-full text-sm text-slate-700 mb-6">
+                          <FileImage className="h-4 w-4 text-slate-500" />
+                          <span className="font-medium">
+                            {selectedModel?.supportedFormats?.join(', ').toUpperCase() || 'JPEG, PNG'}
+                          </span>
+                          <span className="text-slate-400">•</span>
+                          <span className="text-slate-500">Max 10MB</span>
+                        </div>
+                        {/* Hidden file input */}
+                        <input
+                          id="file-input"
+                          type="file"
+                          accept="image/*"
+                          onChange={handleFileInput}
+                          className="hidden"
+                        />
+                      </div>
+                    </div>
                   ) : (
                     <div className="space-y-6">
                       <motion.div
-                        className="flex items-center justify-between p-6 bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-xl"
+                        className="flex items-center justify-between p-6 bg-gradient-to-r from-teal-50 to-blue-50 border border-teal-200 rounded-xl"
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.4 }}
                       >
                         <div className="flex items-center space-x-4">
-                          <FileImage className="h-10 w-10 text-blue-600" />
+                          <FileImage className="h-10 w-10 text-teal-600" />
                           <div>
-                            <p className="font-medium text-gray-900 text-lg">{selectedFile.name}</p>
-                            <p className="text-gray-600">
+                            <p className="font-semibold text-slate-900 text-lg">{selectedFile.name}</p>
+                            <p className="text-slate-600">
                               {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB • Ready for analysis
                             </p>
                           </div>
@@ -975,7 +1075,7 @@ const Upload: React.FC = () => {
                             <img
                               src={previewUrl}
                               alt="Preview"
-                              className="max-w-md max-h-80 object-contain rounded-xl border shadow-lg"
+                              className="max-w-md max-h-80 object-contain rounded-xl border-2 border-slate-200 shadow-lg"
                             />
                             <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm rounded-full p-2">
                               <CheckCircle className="h-5 w-5 text-green-600" />
@@ -990,7 +1090,7 @@ const Upload: React.FC = () => {
                       >
                         <Button
                           onClick={handleAnalyze}
-                          className="w-full bg-gradient-to-r from-blue-600 via-green-600 to-red-600 hover:from-blue-700 hover:via-green-700 hover:to-red-700 py-6 text-lg"
+                          className="w-full bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white py-6 text-lg font-semibold shadow-lg hover:shadow-xl"
                           size="lg"
                         >
                           <Brain className="mr-3 h-6 w-6" />
@@ -1020,74 +1120,136 @@ const Upload: React.FC = () => {
           {/* Step 3: Analysis / BMI Calculator */}
           {currentStep === 'analysis' && (
             <div className="min-h-[80vh]">
-            <motion.div
-              key="analysis"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-            >
+              <motion.div
+                key="analysis"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.3 }}
+              >
 
-            {error ? (
-              <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-red-600">Analysis Failed</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <Alert variant="destructive">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                  <Button onClick={() => setCurrentStep('upload')}>
-                    <ArrowLeft className="mr-2 h-4 w-4" /> Go Back and Try Again
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : selectedModel?.id === 'bmi-calculator' ? (
-              <BMICalculator />
-            ) : isAnalyzing ? (
-              <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-                <CardContent className="p-12">
-                  <EnhancedLoader
-                    icon={selectedModel?.icon}
-                    message={`Analyzing Your Medical Image with ${selectedModel?.name}...`}
-                    progress={analysisProgress}
-                  />
-                </CardContent>
-              </Card>
-            ) : result ? (
-              <div className="space-y-6">
-                <Card className={`shadow-xl border-2 ${getResultColor(result.prediction)}`}>
-                      <CardHeader>
-                        <div className="flex items-center justify-between">
-                          <CardTitle className="flex items-center space-x-3 text-2xl">
-                            {getResultIcon(result.prediction)}
-                            <span>{toTitleCase(result.prediction)}</span>
+                {error ? (
+                  <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+                    <CardHeader>
+                      <CardTitle className="text-red-600">Analysis Failed</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <Alert variant="destructive">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertDescription>{error}</AlertDescription>
+                      </Alert>
+                      <Button onClick={() => setCurrentStep('upload')}>
+                        <ArrowLeft className="mr-2 h-4 w-4" /> Go Back and Try Again
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ) : selectedModel?.id === 'bmi-calculator' ? (
+                  <BMICalculator />
+                ) : isAnalyzing ? (
+                  <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
+                    <CardContent className="p-12">
+                      <EnhancedLoader
+                        icon={selectedModel?.icon}
+                        message={`Analyzing Your Medical Image with ${selectedModel?.name}...`}
+                        progress={analysisProgress}
+                      />
+                    </CardContent>
+                  </Card>
+                ) : result ? (
+                  <motion.div
+                    className="space-y-6"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                  >
+                    {/* Enhanced Main Result Card */}
+                    <Card className={`shadow-2xl border-0 overflow-hidden relative ${getResultColor(result.prediction)}`}>
+                      {/* Gradient Background Overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-white/50 via-transparent to-white/30 pointer-events-none" />
+
+                      <CardHeader className="relative z-10 pb-4">
+                        <motion.div
+                          className="flex items-center justify-between flex-wrap gap-4"
+                          initial={{ x: -20, opacity: 0 }}
+                          animate={{ x: 0, opacity: 1 }}
+                          transition={{ delay: 0.2 }}
+                        >
+                          <CardTitle className="flex items-center space-x-3 text-3xl">
+                            <motion.div
+                              animate={{ rotate: [0, 10, -10, 0] }}
+                              transition={{ duration: 0.5, delay: 0.3 }}
+                            >
+                              {getResultIcon(result.prediction)}
+                            </motion.div>
+                            <span className="font-black bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+                              {toTitleCase(result.prediction)}
+                            </span>
                           </CardTitle>
-                          <Badge variant="secondary" className="text-base">
-                            {Math.round(result.confidence * 100)}% Confidence
-                          </Badge>
-                        </div>
+                          <motion.div
+                            whileHover={{ scale: 1.05 }}
+                            transition={{ type: "spring", stiffness: 300 }}
+                          >
+                            <Badge
+                              variant="secondary"
+                              className="text-lg px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white border-0 shadow-lg"
+                            >
+                              <Sparkles className="h-4 w-4 mr-2" />
+                              {Math.round(result.confidence * 100)}% Confidence
+                            </Badge>
+                          </motion.div>
+                        </motion.div>
                       </CardHeader>
-                      <CardContent>
-                        <p className="text-gray-700">{result.details}</p>
-                        <div className="text-xs text-gray-500 mt-4">
-                          Analyzed with: {result.modelUsed} (Model Accuracy: {result.modelAccuracy}%)
-                        </div>
+
+                      <CardContent className="relative z-10 pt-2">
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: 0.4 }}
+                          className="bg-white/60 backdrop-blur-sm rounded-xl p-6 border border-gray-200/50 shadow-inner"
+                        >
+                          <p className="text-gray-800 text-lg leading-relaxed">
+                            {result.details}
+                          </p>
+                          <div className="flex items-center gap-2 mt-4 pt-4 border-t border-gray-200">
+                            <Brain className="h-4 w-4 text-gray-500" />
+                            <span className="text-sm text-gray-600">
+                              Analyzed with: <span className="font-semibold text-gray-800">{result.modelUsed}</span>
+                            </span>
+                            <Badge variant="outline" className="ml-auto text-xs">
+                              Model Accuracy: {result.modelAccuracy}%
+                            </Badge>
+                          </div>
+                        </motion.div>
                       </CardContent>
                     </Card>
+
                     {renderMedicalGuidance()}
-                    <div className="flex justify-center pt-4"><Button onClick={resetUpload} size="lg" className="bg-gradient-to-r from-blue-600 to-green-600 text-white px-8 py-6 text-lg"><Sparkles className="mr-2 h-5 w-5" />Analyze Another</Button></div>
-              </div>
-            ) : null}
-            </motion.div>
+
+                    <motion.div
+                      className="flex justify-center pt-4"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <Button
+                        onClick={resetUpload}
+                        size="lg"
+                        className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 hover:from-blue-700 hover:via-purple-700 hover:to-pink-700 text-white px-12 py-7 text-lg shadow-2xl rounded-2xl"
+                      >
+                        <Sparkles className="mr-3 h-6 w-6" />
+                        Analyze Another Scan
+                        <ArrowRight className="ml-3 h-6 w-6" />
+                      </Button>
+                    </motion.div>
+                  </motion.div>
+                ) : null}
+              </motion.div>
             </div>
           )}
         </AnimatePresence>
       </div>
 
-       <PaymentModal isOpen={showPaymentModal} onClose={() => setShowPaymentModal(false)} onSuccess={handlePaymentSuccess} />
-    </div>
+      <PaymentModal isOpen={showPaymentModal} onClose={() => setShowPaymentModal(false)} onSuccess={handlePaymentSuccess} />
+    </div >
   );
 };
 

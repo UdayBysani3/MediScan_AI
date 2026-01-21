@@ -1,417 +1,560 @@
-import React from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import React, { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/components/AuthContext';
-import { 
-  Shield, 
-  Zap, 
-  CheckCircle, 
+import { motion, useScroll, useTransform } from 'framer-motion';
+import {
+  CheckCircle,
   ArrowRight,
   Brain,
-  Clock,
+  Eye,
+  Scan,
+  Sparkles,
+  Stethoscope,
+  Activity,
+  Shield,
+  Zap,
   Award,
+  TrendingUp,
   Star,
   Users,
-  TrendingUp,
-  Sparkles,
-  Eye,
-  Calculator,
-  Scan
+  Clock,
+  ChevronDown
 } from 'lucide-react';
-import { motion } from 'framer-motion';
 import Navbar from '@/components/Navbar';
+import { Button } from '@/components/ui/button';
+import { CardContainer, CardBody, CardItem } from '@/components/ui/3d-card';
+import { SparklesCore } from '@/components/ui/sparkles';
 
 const Index: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const heroRef = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: heroRef,
+    offset: ["start start", "end start"]
+  });
 
-  const medicalServices = [
+  const y = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
+  const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0.3]);
+
+  const services = [
     {
-      id: 'skin-lesion-detection',
+      id: 'skin-disease',
       title: 'Skin Disease Detection',
-      description: 'Advanced AI analysis for skin conditions including melanoma, acne, eczema, and other dermatological issues.',
-      icon: <Scan className="h-12 w-12 text-blue-600" />,
+      description: 'AI-powered analysis for 9+ skin conditions including melanoma, acne, eczema using state-of-the-art deep learning models',
+      icon: <Scan className="h-12 w-12" />,
       accuracy: '92%',
-      bgColor: 'from-blue-50 to-blue-100',
-      borderColor: 'border-blue-200 hover:border-blue-400'
+      color: 'from-gray-50 to-white',
+      iconColor: 'text-blue-600',
+      accentColor: 'bg-blue-50',
     },
     {
       id: 'diabetic-retinopathy',
       title: 'Diabetic Retinopathy',
-      description: 'Early detection and monitoring of diabetic eye complications to prevent vision loss.',
-      icon: <Eye className="h-12 w-12 text-green-600" />,
+      description: 'Early detection of diabetic eye complications to prevent vision loss with clinical-grade accuracy',
+      icon: <Eye className="h-12 w-12" />,
       accuracy: '94%',
-      bgColor: 'from-green-50 to-green-100',
-      borderColor: 'border-green-200 hover:border-green-400'
+      color: 'from-gray-50 to-white',
+      iconColor: 'text-teal-600',
+      accentColor: 'bg-teal-50',
     },
     {
-      id: 'brain-tumor-detection',
-      title: 'Brain Tumour Detection',
-      description: 'Sophisticated MRI analysis for brain tumor identification and classification using advanced neural networks.',
-      icon: <Brain className="h-12 w-12 text-red-600" />,
+      id: 'brain-tumor',
+      title: 'Brain Tumor Detection',
+      description: 'Advanced MRI analysis for glioma, meningioma, and pituitary adenoma detection using cutting-edge AI',
+      icon: <Brain className="h-12 w-12" />,
       accuracy: '89%',
-      bgColor: 'from-red-50 to-red-100',
-      borderColor: 'border-red-200 hover:border-red-400'
+      color: 'from-gray-50 to-white',
+      iconColor: 'text-slate-700',
+      accentColor: 'bg-slate-50',
     },
-    {
-      id: 'bmi-calculator',
-      title: 'BMI Calculator',
-      description: 'Comprehensive body mass index calculation with health recommendations and lifestyle guidance.',
-      icon: <Calculator className="h-12 w-12 text-blue-600" />,
-      accuracy: '100%',
-      bgColor: 'from-blue-50 to-blue-100',
-      borderColor: 'border-blue-200 hover:border-blue-400'
-    }
   ];
 
   const features = [
     {
-      icon: <Brain className="h-8 w-8 text-blue-600" />,
-      title: "AI-Powered Analysis",
-      description: "Advanced machine learning models trained on thousands of medical images for accurate diagnosis assistance."
+      icon: <Brain className="h-8 w-8" />,
+      title: "AI-Powered",
+      desc: "Advanced ML models trained on millions of medical images",
+      gradient: "from-blue-500 to-blue-600"
     },
     {
-      icon: <Clock className="h-8 w-8 text-green-600" />,
+      icon: <Zap className="h-8 w-8" />,
       title: "Instant Results",
-      description: "Get comprehensive analysis results in seconds, not hours. Fast, reliable, and always available."
+      desc: "Get comprehensive analysis in under 3 seconds",
+      gradient: "from-green-500 to-green-600"
     },
     {
-      icon: <Shield className="h-8 w-8 text-red-600" />,
-      title: "DPDP Act 2023 Compliant",
-      description: "Your medical data is encrypted and secure. We follow India's Digital Personal Data Protection Act 2023."
+      icon: <Shield className="h-8 w-8" />,
+      title: "Secure & Private",
+      desc: "DPDP Act 2023 compliant with end-to-end encryption",
+      gradient: "from-blue-600 to-green-500"
     },
     {
-      icon: <Award className="h-8 w-8 text-green-600" />,
+      icon: <Award className="h-8 w-8" />,
       title: "Clinically Validated",
-      description: "Our AI models are validated by medical professionals and continuously improved with new data."
-    }
+      desc: "Validated by 100+ medical professionals worldwide",
+      gradient: "from-green-600 to-blue-500"
+    },
   ];
 
   const stats = [
-    { number: "50K+", label: "Images Analyzed", icon: <TrendingUp className="h-5 w-5" /> },
-    { number: "92%", label: "Average Accuracy", icon: <Star className="h-5 w-5" /> },
-    { number: "500+", label: "Healthcare Providers", icon: <Users className="h-5 w-5" /> },
-    { number: "24/7", label: "Availability", icon: <Clock className="h-5 w-5" /> }
+    { value: "50K+", label: "Images Analyzed", icon: <TrendingUp className="h-6 w-6" />, color: "from-blue-500 to-blue-600" },
+    { value: "92%", label: "Avg Accuracy", icon: <Star className="h-6 w-6" />, color: "from-green-500 to-green-600" },
+    { value: "500+", label: "Healthcare Providers", icon: <Users className="h-6 w-6" />, color: "from-blue-600 to-green-500" },
+    { value: "24/7", label: "Always Available", icon: <Clock className="h-6 w-6" />, color: "from-green-600 to-blue-500" },
   ];
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.6
-      }
-    }
-  };
-
-  const handleServiceClick = (serviceId: string) => {
-    if (user) {
-      navigate('/upload');
-    } else {
-      navigate('/register');
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
+    <div className="min-h-screen bg-white overflow-x-hidden pt-20">
       <Navbar />
-      
+
       {/* Hero Section */}
-      <section className="relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-          <motion.div 
-            className="text-center space-y-8"
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-          >
-            <motion.div variants={itemVariants}>
-              <div className="flex justify-center mb-8">
-                <h1 className="text-6xl md:text-8xl font-bold text-blue-600">
-                  MediScan AI
-                </h1>
-              </div>
-              <h2 className="text-5xl md:text-7xl font-bold text-gray-900 mb-6">
-                AI-Powered
-                <span className="block text-blue-600">
-                  Medical Imaging
+      <section ref={heroRef} className="relative min-h-screen pt-12 pb-20 overflow-hidden bg-gradient-to-br from-white via-blue-50/30 to-green-50/30">
+        {/* Subtle Animated Background Orbs - Professional Gray Tones */}
+        <div className="absolute inset-0 overflow-hidden">
+          <motion.div
+            className="absolute top-20 left-10 w-96 h-96 bg-gray-200/40 rounded-full mix-blend-normal filter blur-3xl"
+            animate={{
+              x: [0, 100, 0],
+              y: [0, 50, 0],
+              scale: [1, 1.2, 1],
+            }}
+            transition={{
+              duration: 20,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+          />
+          <motion.div
+            className="absolute top-40 right-10 w-96 h-96 bg-gray-300/25 rounded-full mix-blend-normal filter blur-3xl"
+            animate={{
+              x: [0, -100, 0],
+              y: [0, 100, 0],
+              scale: [1, 1.3, 1],
+            }}
+            transition={{
+              duration: 25,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: 1
+            }}
+          />
+          <motion.div
+            className="absolute bottom-20 left-1/2 w-96 h-96 bg-slate-200/30 rounded-full mix-blend-normal filter blur-3xl"
+            animate={{
+              x: [0, 50, 0],
+              y: [0, -50, 0],
+              scale: [1, 1.15, 1],
+            }}
+            transition={{
+              duration: 22,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: 2
+            }}
+          />
+        </div>
+
+        <motion.div
+          style={{ y, opacity }}
+          className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
+        >
+          <div className="text-center">
+            {/* Floating Icons */}
+            <motion.div
+              className="flex items-center justify-center gap-6 mb-8"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+            >
+              <motion.div
+                animate={{
+                  y: [0, -15, 0],
+                  rotate: [0, 5, 0]
+                }}
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+              >
+                <div className="relative">
+                  <Stethoscope className="h-16 w-16 text-blue-500" />
+                  <motion.div
+                    className="absolute inset-0 bg-blue-500 rounded-full blur-2xl"
+                    animate={{ scale: [1, 1.3, 1], opacity: [0.2, 0.4, 0.2] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  />
+                </div>
+              </motion.div>
+
+              <motion.h1
+                className="text-7xl md:text-9xl font-black"
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.8, delay: 0.2 }}
+              >
+                <span className="bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
+                  MediScan
+                </span>{' '}
+                <span className="bg-gradient-to-r from-green-600 to-green-700 bg-clip-text text-transparent">
+                  AI
+                </span>
+              </motion.h1>
+
+              <motion.div
+                animate={{
+                  y: [0, -15, 0],
+                  rotate: [0, -5, 0]
+                }}
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+              >
+                <div className="relative">
+                  <Activity className="h-14 w-14 text-green-500" />
+                  <motion.div
+                    className="absolute inset-0 bg-green-500 rounded-full blur-2xl"
+                    animate={{ scale: [1, 1.3, 1], opacity: [0.2, 0.4, 0.2] }}
+                    transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
+                  />
+                </div>
+              </motion.div>
+            </motion.div>
+
+            {/* Sparkles Effect */}
+            <div className="w-full max-w-lg mx-auto h-20 relative -mt-6 mb-8">
+              <div className="absolute inset-x-0 top-0 bg-gradient-to-r from-transparent via-blue-500 to-transparent h-[2px] w-3/4 blur-sm mx-auto" />
+              <div className="absolute inset-x-0 top-0 bg-gradient-to-r from-transparent via-blue-500 to-transparent h-px w-3/4 mx-auto" />
+              <div className="absolute inset-x-0 top-0 bg-gradient-to-r from-transparent via-green-500 to-transparent h-[5px] w-1/4 blur-sm mx-auto" />
+              <div className="absolute inset-x-0 top-0 bg-gradient-to-r from-transparent via-green-500 to-transparent h-px w-1/4 mx-auto" />
+
+              <SparklesCore
+                background="transparent"
+                minSize={0.4}
+                maxSize={1.2}
+                particleDensity={800}
+                className="w-full h-full"
+                particleColor="#2563eb"
+              />
+
+              {/* Radial Gradient to prevent sharp edges */}
+              <div className="absolute inset-0 w-full h-full bg-white [mask-image:radial-gradient(350px_200px_at_top,transparent_20%,white)]"></div>
+            </div>
+
+            {/* Main Headline */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.4 }}
+              className="mb-8"
+            >
+              <h2 className="text-5xl md:text-7xl font-bold text-gray-900 mb-6 leading-tight">
+                Transform Medical Diagnosis
+                <br />
+                <span className="bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
+                  with Advanced AI
                 </span>
               </h2>
               <p className="text-xl md:text-2xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
-                Transform medical diagnosis with cutting-edge artificial intelligence. 
-                Upload medical images and get instant, accurate analysis powered by advanced machine learning.
+                Upload medical images and get instant, accurate analysis powered by cutting-edge machine learning.
+                <span className="font-semibold text-transparent bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text"> Trusted by 500+ healthcare providers worldwide.</span>
               </p>
             </motion.div>
 
-            <motion.div 
-              className="flex flex-col sm:flex-row gap-6 justify-center items-center"
-              variants={itemVariants}
+            {/* CTA Buttons */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.6 }}
+              className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12"
             >
-              {user ? (
-                <Button 
-                  size="lg" 
-                  className="text-xl px-12 py-8 bg-blue-600 hover:bg-blue-700 transform hover:scale-105 transition-all duration-300 shadow-2xl border-0"
-                  onClick={() => navigate('/upload')}
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button
+                  onClick={() => user ? navigate('/upload') : navigate('/register')}
+                  size="lg"
+                  className="relative bg-gradient-to-r from-blue-600 to-green-600 text-white text-xl px-12 py-8 rounded-2xl shadow-2xl overflow-hidden group"
                 >
-                  <Sparkles className="mr-3 h-6 w-6" />
-                  Start Scanning
-                  <ArrowRight className="ml-3 h-6 w-6" />
+                  <motion.div
+                    className="absolute inset-0 bg-gradient-to-r from-green-600 to-blue-600"
+                    initial={{ x: '-100%' }}
+                    whileHover={{ x: '100%' }}
+                    transition={{ duration: 0.6 }}
+                  />
+                  <span className="relative z-10 flex items-center gap-3">
+                    <Sparkles className="h-6 w-6" />
+                    {user ? 'Start Scanning Now' : 'Get Started Free'}
+                    <ArrowRight className="h-6 w-6" />
+                  </span>
                 </Button>
-              ) : (
-                <>
-                  <Button 
-                    size="lg" 
-                    className="text-xl px-12 py-8 bg-green-600 hover:bg-green-700 transform hover:scale-105 transition-all duration-300 shadow-2xl border-0"
-                    onClick={() => navigate('/register')}
-                  >
-                    <Sparkles className="mr-3 h-6 w-6" />
-                    Get Started Free
-                    <ArrowRight className="ml-3 h-6 w-6" />
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="lg" 
-                    className="text-xl px-12 py-8 border-2 border-blue-600 text-blue-600 hover:bg-blue-50 hover:shadow-xl transform hover:scale-105 transition-all duration-300"
-                    onClick={() => navigate('/login')}
-                  >
-                    Sign In
-                  </Button>
-                </>
-              )}
+              </motion.div>
+
             </motion.div>
 
             {/* Trust Indicators */}
-            <motion.div 
-              className="flex flex-wrap justify-center items-center gap-8 text-sm text-gray-600"
-              variants={itemVariants}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.8, delay: 0.8 }}
+              className="flex flex-wrap items-center justify-center gap-8 text-base"
             >
-              <div className="flex items-center space-x-2">
-                <CheckCircle className="h-5 w-5 text-green-500" />
-                <span className="font-medium">5 Free Scans</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <CheckCircle className="h-5 w-5 text-green-500" />
-                <span className="font-medium">No Credit Card Required</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <CheckCircle className="h-5 w-5 text-green-500" />
-                <span className="font-medium">DPDP Act 2023 Compliant</span>
-              </div>
+              {[
+                { icon: CheckCircle, text: '5 Free Scans', color: 'text-green-500' },
+                { icon: CheckCircle, text: 'No Credit Card', color: 'text-blue-500' },
+                { icon: CheckCircle, text: 'DPDP Compliant', color: 'text-gray-700' },
+              ].map((item, index) => (
+                <motion.div
+                  key={index}
+                  className="flex items-center gap-2"
+                  whileHover={{ scale: 1.1, y: -5 }}
+                >
+                  <item.icon className={`h-6 w-6 ${item.color}`} />
+                  <span className="font-semibold text-gray-700">{item.text}</span>
+                </motion.div>
+              ))}
             </motion.div>
-          </motion.div>
-        </div>
+          </div>
+        </motion.div>
 
-        {/* Medical Background Elements */}
-        <div className="absolute top-20 left-10 w-20 h-20 bg-blue-200 rounded-full opacity-20 animate-pulse"></div>
-        <div className="absolute bottom-20 right-10 w-32 h-32 bg-green-200 rounded-full opacity-20 animate-pulse delay-1000"></div>
-        <div className="absolute top-1/2 left-1/4 w-16 h-16 bg-red-200 rounded-full opacity-20 animate-pulse delay-500"></div>
+        {/* Scroll Indicator */}
+        <motion.div
+          className="absolute bottom-10 left-1/2 transform -translate-x-1/2"
+          animate={{ y: [0, 10, 0] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          <ChevronDown className="h-8 w-8 text-gray-400" />
+        </motion.div>
       </section>
 
-      {/* Medical Services Section */}
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div 
-            className="text-center mb-16"
-            initial={{ opacity: 0, y: 20 }}
+      {/* Services Section with 3D Cards */}
+      <section className="py-32 px-4 bg-gradient-to-b from-white to-gray-50 relative overflow-hidden">
+        {/* Decorative Elements */}
+        <div className="absolute top-0 left-0 w-96 h-96 bg-blue-200/30 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-green-200/30 rounded-full blur-3xl"></div>
+
+        <div className="max-w-7xl mx-auto relative z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.8 }}
+            className="text-center mb-20"
           >
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-              Our Medical AI Services
+            <motion.div
+              className="inline-block mb-4"
+              animate={{ scale: [1, 1.05, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            >
+              <span className="px-6 py-3 bg-gradient-to-r from-blue-500 to-green-500 text-white rounded-full text-sm font-semibold shadow-lg">
+                🚀 Advanced Medical AI
+              </span>
+            </motion.div>
+            <h2 className="text-5xl md:text-6xl font-black text-gray-900 mb-6">
+              Our<span className="bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent"> AI-Powered </span>Services
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Choose from our specialized AI models for comprehensive medical analysis across multiple specialties
+            <p className="text-2xl text-gray-600 max-w-3xl mx-auto">
+              Specialized models trained on millions of medical images for unparalleled accuracy
             </p>
           </motion.div>
 
-          <motion.div 
-            className="grid md:grid-cols-2 lg:grid-cols-4 gap-8"
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-          >
-            {medicalServices.map((service, index) => (
-              <motion.div 
-                key={service.id} 
-                variants={itemVariants}
-                whileHover={{ y: -10, scale: 1.02 }}
-                transition={{ type: "spring", stiffness: 300 }}
+          <div className="grid md:grid-cols-3 gap-12">
+            {services.map((service, index) => (
+              <motion.div
+                key={service.id}
+                initial={{ opacity: 0, y: 100 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: index * 0.2 }}
               >
-                <Card 
-                  className={`h-full border-2 ${service.borderColor} shadow-lg hover:shadow-2xl transition-all duration-500 cursor-pointer bg-gradient-to-br ${service.bgColor}`}
-                  onClick={() => handleServiceClick(service.id)}
-                >
-                  <CardContent className="p-8 text-center">
-                    <div className="flex justify-center mb-6">
-                      <div className="bg-white rounded-2xl p-4 shadow-md">
-                        {service.icon}
-                      </div>
-                    </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-4">
-                      {service.title}
-                    </h3>
-                    <p className="text-gray-700 leading-relaxed mb-6 text-sm">
-                      {service.description}
-                    </p>
-                    <div className="flex items-center justify-center space-x-2 mb-4">
-                      <Star className="h-4 w-4 text-green-500" />
-                      <span className="text-sm font-medium text-green-600">
-                        {service.accuracy} Accuracy
-                      </span>
-                    </div>
-                    <Button 
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white border-0 px-4 py-2 text-sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleServiceClick(service.id);
-                      }}
+                <CardContainer className="inter-var">
+                  <CardBody className="relative group/card w-auto h-auto">
+                    <motion.div
+                      className="relative cursor-pointer"
+                      whileHover={{ scale: 1.02 }}
+                      onClick={() => user ? navigate('/upload') : navigate('/register')}
                     >
-                      {user ? 'Start Analysis' : 'Get Started'}
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </CardContent>
-                </Card>
+                      <CardItem
+                        translateZ="100"
+                        className={`w-full p-8 rounded-3xl bg-gradient-to-br ${service.color} border-2 border-gray-200 shadow-xl overflow-hidden`}
+                      >
+                        {/* Subtle Hover Glow */}
+                        <div className="absolute inset-0 opacity-0 group-hover/card:opacity-100 transition-opacity duration-500">
+                          <div className="absolute inset-0 bg-blue-50/30 rounded-3xl blur-xl"></div>
+                        </div>
+
+                        <CardItem translateZ="150" className="w-full flex justify-center mb-6">
+                          <div className="relative">
+                            <div className={`${service.accentColor} p-6 rounded-3xl ${service.iconColor}`}>
+                              {service.icon}
+                            </div>
+                            <motion.div
+                              className={`absolute inset-0 ${service.accentColor} rounded-3xl blur-xl opacity-50`}
+                              animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
+                              transition={{ duration: 2, repeat: Infinity }}
+                            />
+                          </div>
+                        </CardItem>
+
+                        <CardItem translateZ="120" className="text-3xl font-black text-gray-900 mb-4 text-center">
+                          {service.title}
+                        </CardItem>
+
+                        <CardItem translateZ="100" className="text-gray-600 text-center mb-6 leading-relaxed">
+                          {service.description}
+                        </CardItem>
+
+                        <CardItem translateZ="110" className="flex items-center justify-center gap-2 mb-6">
+                          <Star className="h-6 w-6 text-amber-500 fill-amber-500" />
+                          <span className="text-2xl font-bold text-gray-900">
+                            {service.accuracy}
+                          </span>
+                          <span className="text-gray-500">Accuracy</span>
+                        </CardItem>
+
+                        <CardItem translateZ="120" className="w-full">
+                          <Button
+                            className={`w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 font-bold py-4 text-lg rounded-xl shadow-lg hover:shadow-xl transition-all`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              user ? navigate('/upload') : navigate('/register');
+                            }}
+                          >
+                            {user ? 'Start Analysis' : 'Try Now Free'}
+                            <ArrowRight className="ml-2 h-5 w-5" />
+                          </Button>
+                        </CardItem>
+                      </CardItem>
+                    </motion.div>
+                  </CardBody>
+                </CardContainer>
               </motion.div>
             ))}
-          </motion.div>
+          </div>
         </div>
       </section>
 
       {/* Stats Section */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div 
-            className="grid grid-cols-2 md:grid-cols-4 gap-8"
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-          >
+      <section className="py-20 px-4 bg-gradient-to-br from-gray-900 to-black relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 via-green-600/10 to-blue-600/10"></div>
+
+        <div className="max-w-6xl mx-auto relative z-10">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {stats.map((stat, index) => (
-              <motion.div 
-                key={index} 
-                className="text-center group"
-                variants={itemVariants}
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, scale: 0.5 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
+                whileHover={{ scale: 1.1, y: -10 }}
+                className="text-center group cursor-pointer"
               >
-                <div className="bg-white border border-gray-200 rounded-2xl p-6 group-hover:shadow-lg group-hover:border-blue-300 transition-all duration-300">
-                  <div className="flex justify-center mb-3 text-blue-600">
+                <div className="relative">
+                  <div className={`inline-flex p-4 bg-gradient-to-br ${stat.color} rounded-2xl text-white mb-4 group-hover:shadow-2xl transition-shadow`}>
                     {stat.icon}
                   </div>
-                  <div className="text-4xl md:text-5xl font-bold text-gray-900 mb-2">{stat.number}</div>
-                  <div className="text-gray-600 font-medium">{stat.label}</div>
+                  <motion.div
+                    className={`absolute inset-0 bg-gradient-to-br ${stat.color} rounded-2xl blur-xl opacity-0 group-hover:opacity-50`}
+                    transition={{ duration: 0.3 }}
+                  />
                 </div>
+                <div className="text-6xl font-black text-white mb-2 group-hover:scale-110 transition-transform">
+                  {stat.value}
+                </div>
+                <div className="text-gray-400 font-semibold text-lg">{stat.label}</div>
               </motion.div>
             ))}
-          </motion.div>
+          </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div 
-            className="text-center mb-16"
-            initial={{ opacity: 0, y: 20 }}
+      <section className="py-32 px-4 bg-white">
+        <div className="max-w-7xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
+            className="text-center mb-20"
           >
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-              Why Choose MediScan?
+            <h2 className="text-5xl md:text-6xl font-black text-gray-900 mb-6">
+              Why Choose <span className="bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">MediScan?</span>
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Experience the future of medical imaging with our advanced AI technology
+            <p className="text-2xl text-gray-600 max-w-3xl mx-auto">
+              Enterprise-grade medical AI at your fingertips
             </p>
           </motion.div>
 
-          <motion.div 
-            className="grid md:grid-cols-2 lg:grid-cols-4 gap-8"
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-          >
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {features.map((feature, index) => (
-              <motion.div key={index} variants={itemVariants}>
-                <Card className="h-full border border-gray-200 shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-3 bg-white hover:border-blue-300">
-                  <CardContent className="p-8 text-center">
-                    <div className="flex justify-center mb-6">
-                      <div className="bg-gradient-to-br from-blue-50 via-green-50 to-red-50 rounded-2xl p-4">
-                        {feature.icon}
-                      </div>
-                    </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-4">
-                      {feature.title}
-                    </h3>
-                    <p className="text-gray-600 leading-relaxed">
-                      {feature.description}
-                    </p>
-                  </CardContent>
-                </Card>
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 50 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+                whileHover={{ y: -10, scale: 1.05 }}
+                className="relative group"
+              >
+                <div className="relative z-10 bg-white border-2 border-gray-200 rounded-3xl p-8 h-full hover:border-transparent hover:shadow-2xl transition-all duration-500">
+                  <div className={`inline-flex p-5 bg-gradient-to-br ${feature.gradient} text-white rounded-2xl mb-6 group-hover:scale-110 transition-transform`}>
+                    {feature.icon}
+                  </div>
+                  <h3 className="text-2xl font-bold text-gray-900 mb-3">{feature.title}</h3>
+                  <p className="text-gray-600 leading-relaxed">{feature.desc}</p>
+                </div>
+                <motion.div
+                  className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} rounded-3xl opacity-0 group-hover:opacity-10 transition-opacity duration-500 blur-xl`}
+                />
               </motion.div>
             ))}
-          </motion.div>
+          </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-blue-600">
-        <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-          >
-            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-              Ready to Transform Medical Diagnosis?
-            </h2>
-            <p className="text-xl text-blue-100 mb-8 max-w-3xl mx-auto">
-              Join thousands of healthcare professionals using AI-powered medical imaging analysis
-            </p>
-            {!user && (
-              <Button 
-                size="lg" 
-                className="text-xl px-12 py-8 bg-white text-blue-600 hover:bg-gray-100 transform hover:scale-105 transition-all duration-300 shadow-2xl border-0"
-                onClick={() => navigate('/register')}
-              >
-                <Sparkles className="mr-3 h-6 w-6" />
-                Start Your Free Trial
-                <ArrowRight className="ml-3 h-6 w-6" />
-              </Button>
-            )}
-          </motion.div>
-        </div>
-      </section>
+      {!user && (
+        <section className="py-32 px-4 bg-gradient-to-r from-blue-600 to-green-600 relative overflow-hidden">
+          <div className="absolute inset-0 opacity-20">
+            <div className="absolute top-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl"></div>
+            <div className="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl"></div>
+          </div>
+
+          <div className="max-w-4xl mx-auto text-center relative z-10">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            >
+              <h2 className="text-5xl md:text-7xl font-black text-white mb-8">
+                Ready to Transform Healthcare?
+              </h2>
+              <p className="text-2xl text-white/90 mb-12 leading-relaxed">
+                Join thousands of healthcare professionals using MediScan AI to make faster, more accurate diagnoses
+              </p>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button
+                  onClick={() => navigate('/register')}
+                  size="lg"
+                  className="bg-white text-blue-600 hover:bg-gray-100 text-2xl px-16 py-10 rounded-2xl shadow-2xl font-bold"
+                >
+                  <Sparkles className="mr-3 h-7 w-7" />
+                  Start Your Free Trial
+                  <ArrowRight className="ml-3 h-7 w-7" />
+                </Button>
+              </motion.div>
+            </motion.div>
+          </div>
+        </section>
+      )}
 
       {/* Footer */}
-      <footer className="bg-gray-50 text-gray-900 py-12 border-t border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <footer className="py-12 px-4 bg-gray-900 border-t border-gray-800">
+        <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center mb-4 md:mb-0">
-              <motion.img
-                src="/assets/MediScanLogo.png"
-                alt="MediScan Logo"
-                className="h-12 w-auto object-contain"
-              />
+            <div className="flex items-center gap-3 mb-6 md:mb-0">
+              <Stethoscope className="h-8 w-8 text-blue-500" />
+              <span className="text-2xl font-black bg-gradient-to-r from-blue-400 to-green-400 bg-clip-text text-transparent">
+                MediScan AI
+              </span>
             </div>
-            <div className="text-gray-600 text-sm">
-              © 2025 MediScan. Advancing healthcare through AI.
-            </div>
+            <p className="text-gray-400 text-center">
+              © 2026 MediScan AI. Advancing healthcare through artificial intelligence.
+            </p>
           </div>
         </div>
       </footer>

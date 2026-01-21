@@ -1,0 +1,60 @@
+/* Custom Flatpickr Styling for MediScan AI */
+
+.flatpickr-calendar {
+    @apply rounded-2xl shadow-2xl border-2 border-slate-200;
+    font-family: inherit;
+}
+
+.flatpickr-calendar.open {
+    @apply animate-in fade-in-0 zoom-in-95;
+}
+
+.flatpickr-months {
+    @apply bg-gradient-to-r from-blue-600 to-teal-600 rounded-t-xl;
+}
+
+.flatpickr-current-month {
+    @apply text-white;
+}
+
+.flatpickr-month {
+    @apply text-white;
+}
+
+.flatpickr-prev-month:hover svg,
+.flatpickr-next-month:hover svg {
+    @apply fill-white;
+}
+
+.flatpickr-prev-month svg,
+.flatpickr-next-month svg {
+    @apply fill-white/80;
+}
+
+.flatpickr-weekday {
+    @apply text-slate-600 font-semibold;
+}
+
+.flatpickr-day {
+    @apply text-slate-700 font-medium rounded-lg transition-all;
+}
+
+.flatpickr-day:hover:not(.flatpickr-disabled):not(.selected) {
+    @apply bg-blue-50 border-blue-200;
+}
+
+.flatpickr-day.today {
+    @apply bg-teal-50 border-teal-400 font-bold;
+}
+
+.flatpickr-day.selected {
+    @apply bg-gradient-to-r from-blue-600 to-teal-600 border-blue-600 text-white font-bold shadow-md;
+}
+
+.flatpickr-day.selected:hover {
+    @apply bg-gradient-to-r from-blue-700 to-teal-700;
+}
+
+.flatpickr-day.disabled {
+    @apply text-slate-300;
+}
