@@ -136,6 +136,7 @@ export function ChatBot() {
     const [messages, setMessages] = useState<Message[]>([]);
     const [inputValue, setInputValue] = useState('');
     const [isTyping, setIsTyping] = useState(false);
+    const [askedQuestions, setAskedQuestions] = useState<string[]>([]);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
@@ -199,6 +200,8 @@ export function ChatBot() {
         if (!inputValue.trim()) return;
 
         addUserMessage(inputValue);
+        // Track asked questions
+        setAskedQuestions(prev => [...prev, inputValue.trim()]);
         setInputValue('');
         setIsTyping(true);
 
@@ -231,6 +234,7 @@ export function ChatBot() {
         setMessages([]); // Clear all messages
         setInputValue(''); // Clear input field
         setIsMinimized(false); // Reset minimize state
+        setAskedQuestions([]); // Clear asked questions
     };
 
     return (
@@ -357,24 +361,34 @@ export function ChatBot() {
                                         </motion.div>
                                     )}
 
-                                    {messages.length <= 1 && (
+                                    {/* Show suggested questions after each bot message (excluding asked ones) */}
+                                    {!isTyping && messages.length > 0 && messages[messages.length - 1].sender === 'bot' && (
                                         <div className="space-y-2">
-                                            <p className="text-xs text-slate-500 font-medium">Suggested questions:</p>
-                                            {suggestedQuestions.map((question, index) => (
-                                                <motion.button
-                                                    key={index}
-                                                    initial={{ opacity: 0, x: -10 }}
-                                                    animate={{ opacity: 1, x: 0 }}
-                                                    transition={{ delay: index * 0.1 }}
-                                                    onClick={() => {
-                                                        setInputValue(question);
-                                                        inputRef.current?.focus();
-                                                    }}
-                                                    className="block w-full text-left p-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-blue-200"
-                                                >
-                                                    {question}
-                                                </motion.button>
-                                            ))}
+                                            <p className="text-xs text-slate-500 font-medium">You might also ask:</p>
+                                            {suggestedQuestions
+                                                .filter(question => !askedQuestions.includes(question))
+                                                .map((question, index) => (
+                                                    <motion.button
+                                                        key={question}
+                                                        initial={{ opacity: 0, x: -10 }}
+                                                        animate={{ opacity: 1, x: 0 }}
+                                                        transition={{ delay: index * 0.1 }}
+                                                        onClick={() => {
+                                                            // Auto-send the question
+                                                            addUserMessage(question);
+                                                            setAskedQuestions(prev => [...prev, question]);
+                                                            setIsTyping(true);
+                                                            setTimeout(() => {
+                                                                const answer = findBestAnswer(question);
+                                                                addBotMessage(answer);
+                                                                setIsTyping(false);
+                                                            }, 1000);
+                                                        }}
+                                                        className="block w-full text-left p-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-blue-200 hover:shadow-sm"
+                                                    >
+                                                        {question}
+                                                    </motion.button>
+                                                ))}
                                         </div>
                                     )}
 
