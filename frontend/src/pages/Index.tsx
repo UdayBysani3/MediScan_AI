@@ -542,6 +542,158 @@ const Index: React.FC = () => {
         </section>
       )}
 
+      {/* About Us Section */}
+      <section className="py-32 px-4 bg-gradient-to-b from-gray-50 to-white relative overflow-hidden">
+        <div className="max-w-7xl mx-auto relative z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="text-center mb-20"
+          >
+            <motion.div
+              className="inline-block mb-4"
+              animate={{ scale: [1, 1.05, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            >
+              <span className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full text-sm font-semibold shadow-lg">
+                👥 Our Leadership Team
+              </span>
+            </motion.div>
+            <h2 className="text-5xl md:text-6xl font-black text-gray-900 mb-6">
+              Meet the <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Visionaries</span>
+            </h2>
+            <p className="text-2xl text-gray-600 max-w-3xl mx-auto">
+              Passionate experts bringing innovation to healthcare diagnostics
+            </p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-3 gap-12">
+            {/* CEO - Prathap */}
+            <motion.div
+              initial={{ opacity: 0, y: 100 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              whileHover={{ y: -10, scale: 1.02 }}
+              className="relative group"
+            >
+              <div className="relative z-10 bg-white border-2 border-gray-200 rounded-3xl p-8 h-full hover:border-transparent hover:shadow-2xl transition-all duration-500">
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-white rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+
+                <div className="relative z-10">
+                  <div className="w-48 h-48 mx-auto mb-6 rounded-full overflow-hidden border-4 border-blue-200 shadow-xl group-hover:border-blue-400 transition-all duration-500">
+                    <img
+                      src="/assets/prathap.jpg"
+                      alt="CEO - Pattupogula Venkata Sai Prathap"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+
+                  <div className="text-center">
+                    <motion.div
+                      className="inline-flex px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-full text-xs font-bold mb-4 shadow-lg"
+                      whileHover={{ scale: 1.1 }}
+                    >
+                      Chief Executive Officer
+                    </motion.div>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2">Pattupogula Venkata</h3>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-4">Sai Prathap</h3>
+                    <p className="text-gray-600 leading-relaxed">
+                      Leading with vision and passion to revolutionize medical diagnostics
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <motion.div
+                className="absolute inset-0 bg-gradient-to-br from-blue-500 to-green-500 rounded-3xl opacity-0 group-hover:opacity-10 transition-opacity duration-500 blur-xl"
+              />
+            </motion.div>
+            {/* CTO - Uday */}
+            <motion.div
+              initial={{ opacity: 0, y: 100 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              whileHover={{ y: -10, scale: 1.02 }}
+              className="relative group"
+            >
+              <div className="relative z-10 bg-white border-2 border-gray-200 rounded-3xl p-8 h-full hover:border-transparent hover:shadow-2xl transition-all duration-500">
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-50 to-white rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+
+                <div className="relative z-10">
+                  <div className="w-48 h-48 mx-auto mb-6 rounded-full overflow-hidden border-4 border-purple-200 shadow-xl group-hover:border-purple-400 transition-all duration-500">
+                    <img
+                      src="/assets/uday.png"
+                      alt="CTO - Bysani Uday Bhagavan"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+
+                  <div className="text-center">
+                    <motion.div
+                      className="inline-flex px-4 py-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-full text-xs font-bold mb-4 shadow-lg"
+                      whileHover={{ scale: 1.1 }}
+                    >
+                      Chief Technology Officer
+                    </motion.div>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2">Bysani Uday</h3>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-4">Bhagavan</h3>
+                    <p className="text-gray-600 leading-relaxed">
+                      Driving technological innovation and building scalable AI solutions for healthcare
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <motion.div
+                className="absolute inset-0 bg-gradient-to-br from-purple-500 to-pink-500 rounded-3xl opacity-0 group-hover:opacity-10 transition-opacity duration-500 blur-xl"
+              />
+            </motion.div>
+            {/* CMO - Pradeep */}
+            <motion.div
+              initial={{ opacity: 0, y: 100 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              whileHover={{ y: -10, scale: 1.02 }}
+              className="relative group"
+            >
+              <div className="relative z-10 bg-white border-2 border-gray-200 rounded-3xl p-8 h-full hover:border-transparent hover:shadow-2xl transition-all duration-500">
+                <div className="absolute inset-0 bg-gradient-to-br from-green-50 to-white rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+
+                <div className="relative z-10">
+                  <div className="w-48 h-48 mx-auto mb-6 rounded-full overflow-hidden border-4 border-green-200 shadow-xl group-hover:border-green-400 transition-all duration-500">
+                    <img
+                      src="/assets/Pradeep.jpg"
+                      alt="CMO - Gora Pradeep Kumar Reddy"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+
+                  <div className="text-center">
+                    <motion.div
+                      className="inline-flex px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-full text-xs font-bold mb-4 shadow-lg"
+                      whileHover={{ scale: 1.1 }}
+                    >
+                      Chief Marketing Officer
+                    </motion.div>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2">Gora Pradeep</h3>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-4">Kumar Reddy</h3>
+                    <p className="text-gray-600 leading-relaxed">
+                      Crafting strategies to make AI healthcare accessible to everyone
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <motion.div
+                className="absolute inset-0 bg-gradient-to-br from-green-500 to-blue-500 rounded-3xl opacity-0 group-hover:opacity-10 transition-opacity duration-500 blur-xl"
+              />
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="py-12 px-4 bg-gray-900 border-t border-gray-800">
         <div className="max-w-7xl mx-auto">

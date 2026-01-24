@@ -10,6 +10,8 @@ interface User {
     accountType: 'free' | 'monthly' | 'yearly';
     analysisCount: number;
     maxScans: number;
+    customScans?: number; // Custom scans purchased individually (never expire)
+    planScans?: number; // Scans from monthly/yearly plans (expire with plan)
     planExpiryDate?: string; // ISO date string when plan expires
     planPurchaseDate?: string; // ISO date string when plan was purchased
 }

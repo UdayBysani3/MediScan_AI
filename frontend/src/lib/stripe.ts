@@ -44,9 +44,9 @@ export const pricingPlans: PricingPlan[] = [
     stripePriceId: ''
   },
   {
-    id: 'monthly',
-    name: 'Monthly Pack',
-    price: 150,
+    id: 'small-business-monthly',
+    name: 'Small Business Monthly',
+    price: 500,
     currency: '₹',
     interval: 'month',
     scanLimit: 100,
@@ -61,18 +61,18 @@ export const pricingPlans: PricingPlan[] = [
       'DPDP Act 2023 compliant storage'
     ],
     popular: false,
-    stripePriceId: 'price_monthly_150'
+    stripePriceId: 'price_small_business_monthly_500'
   },
   {
-    id: 'yearly',
-    name: 'Yearly Pack',
-    price: 1500,
+    id: 'small-business-yearly',
+    name: 'Small Business Yearly',
+    price: 5000,
     currency: '₹',
     interval: 'year',
-    scanLimit: 5000,
+    scanLimit: 2000,
     validityDays: 365,
     features: [
-      '5000 AI scans',
+      '2000 AI scans',
       'Valid for 365 days',
       'All 3 disease models',
       'Priority support',
@@ -82,10 +82,58 @@ export const pricingPlans: PricingPlan[] = [
       'API access',
       'Custom model training',
       '24/7 phone support',
-      'Best value! (₹0.30 per scan)'
+      'Best value! (₹2.50 per scan)'
     ],
     popular: true,
-    stripePriceId: 'price_yearly_1500'
+    stripePriceId: 'price_small_business_yearly_5000'
+  },
+  {
+    id: 'large-business-monthly',
+    name: 'Large Business Monthly',
+    price: 2500,
+    currency: '₹',
+    interval: 'month',
+    scanLimit: 1000,
+    validityDays: 30,
+    features: [
+      '1,000 AI scans',
+      'Valid for 30 days',
+      'All 3 disease models',
+      'Priority support',
+      'High-resolution results',
+      'Advanced analytics',
+      'DPDP Act 2023 compliant storage',
+      'Bulk upload feature',
+      'Enterprise-grade solution'
+    ],
+    popular: false,
+    stripePriceId: 'price_large_business_monthly_2500'
+  },
+  {
+    id: 'large-business-yearly',
+    name: 'Large Business Yearly',
+    price: 20000,
+    currency: '₹',
+    interval: 'year',
+    scanLimit: 10000,
+    validityDays: 365,
+    features: [
+      '10,000 AI scans',
+      'Valid for 365 days',
+      'All 3 disease models',
+      'Priority support',
+      'High-resolution results',
+      'Advanced analytics',
+      'DPDP Act 2023 compliant storage',
+      'API access',
+      'Custom model training',
+      '24/7 phone support',
+      'Bulk upload feature',
+      'Dedicated account manager',
+      'Best value! (₹2.00 per scan)'
+    ],
+    popular: false,
+    stripePriceId: 'price_large_business_yearly_20000'
   }
 ];
 

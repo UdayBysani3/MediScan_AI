@@ -1,18 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/components/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { formatDistanceToNow, format, isSameDay, parseISO } from 'date-fns';
+import { formatDistanceToNow, isWithinInterval, subDays, startOfDay, endOfDay } from 'date-fns';
 import {
-  Stethoscope, Upload, TrendingUp, Clock, CheckCircle, BarChart3, Award, Sparkles, Zap, Shield, Calendar as CalendarIcon
+  Stethoscope, Upload, TrendingUp, Clock, CheckCircle, BarChart3, Award, Sparkles, Zap, Shield, AlertTriangle, ChevronDown, Filter
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Navbar from '@/components/Navbar';
 import { CardContainer, CardBody, CardItem } from '@/components/ui/3d-card';
 import { SidebarProfile } from '@/components/ui/sidebar-profile';
-import Flatpickr from 'react-flatpickr';
-import 'flatpickr/dist/themes/material_blue.css';
-import '../styles/flatpickr-custom.css';
 import { cn } from '@/lib/utils';
 
 // Interface for the data we fetch from the backend
@@ -31,7 +29,7 @@ const Dashboard: React.FC = () => {
   const [recentActivity, setRecentActivity] = useState<AnalysisActivity[]>([]);
   const [isLoadingActivity, setIsLoadingActivity] = useState(true);
   const [activityError, setActivityError] = useState<string | null>(null);
-  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [filter, setFilter] = useState<'today' | 'week' | 'all'>('today'); // Default to 'today'
 
   // useEffect to fetch data when the component loads
   useEffect(() => {
@@ -72,10 +70,25 @@ const Dashboard: React.FC = () => {
   const scansRemaining = user.maxScans - user.analysisCount;
   const usagePercentage = (user.analysisCount / user.maxScans) * 100;
 
-  // Filter activities based on selected date
-  const filteredActivity = recentActivity.filter(activity =>
-    date ? isSameDay(new Date(activity.timestamp), date) : true
-  );
+  // Filter activities based on selected filter
+  const filteredActivity = recentActivity.filter(activity => {
+    const activityDate = new Date(activity.timestamp);
+    const now = new Date();
+    const todayStart = startOfDay(now);
+    const todayEnd = endOfDay(now);
+
+    switch (filter) {
+      case 'today':
+        return isWithinInterval(activityDate, { start: todayStart, end: todayEnd });
+      case 'week':
+        const weekStart = startOfDay(subDays(now, 6)); // Past 6 days + today = 7 days
+        return isWithinInterval(activityDate, { start: weekStart, end: todayEnd });
+      case 'all':
+        return true;
+      default:
+        return true;
+    }
+  });
 
   const renderActivityContent = () => {
     if (isLoadingActivity) {
@@ -172,6 +185,18 @@ const Dashboard: React.FC = () => {
               <CardItem translateZ="60" className="text-4xl font-extrabold text-slate-900 mb-3">
                 {scansRemaining}
               </CardItem>
+              {user.customScans !== undefined && user.planScans !== undefined && (
+                <CardItem translateZ="30" className="text-xs text-slate-600 mb-2 space-y-0.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-blue-600 font-medium">Plan Scans:</span>
+                    <span className="font-semibold">{user.planScans || 0}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-green-600 font-medium">Custom Scans:</span>
+                    <span className="font-semibold">{user.customScans || 0}</span>
+                  </div>
+                </CardItem>
+              )}
               <CardItem translateZ="40" className="w-full">
                 <div className="flex justify-between text-xs text-slate-500 mb-2 font-medium">
                   <span>Usage</span>
@@ -239,6 +264,23 @@ const Dashboard: React.FC = () => {
           </CardContainer>
         </div>
 
+        {/* Plan Expiration Warning */}
+        {user.planExpiryDate && new Date(user.planExpiryDate) < new Date() && user.accountType !== 'free' && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="max-w-7xl mx-auto px-8 mb-6"
+          >
+            <Alert className="border-orange-300 bg-orange-50">
+              <AlertTriangle className="h-4 w-4 text-orange-600" />
+              <AlertDescription className="text-orange-800">
+                <strong>Your {user.accountType} plan has expired.</strong> Don't worry! Your <strong>{user.customScans || 0} custom scans</strong> are still available and never expire.
+                <a href="/pricing" className="underline ml-1 font-semibold hover:text-orange-900">Renew your plan</a> to get more scans.
+              </AlertDescription>
+            </Alert>
+          </motion.div>
+        )}
+
         {/* Recent Activity */}
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between mb-6">
@@ -248,42 +290,25 @@ const Dashboard: React.FC = () => {
             </h2>
 
 
-            {/* Professional Flatpickr Date Picker */}
+
+            {/* Filter Dropdown */}
             <div className="flex items-center gap-3">
-              <span className="text-slate-600 font-semibold text-sm">Analysis On:- </span>
+              <span className="text-slate-600 font-semibold text-sm flex items-center">
+                <Filter className="h-4 w-4 mr-2" />
+                Sort Analysis by:
+              </span>
               <div className="relative">
-
-                <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-blue-500 z-10 pointer-events-none" />
-                <Flatpickr
-                  value={date}
-                  onChange={(selectedDates) => {
-                    setDate(selectedDates[0] || new Date());
-                  }}
-                  options={{
-                    dateFormat: "F j, Y",
-                    defaultDate: new Date(),
-                    maxDate: new Date(),
-                    allowInput: true,
-                    disableMobile: true,
-                  }}
-                  className="pl-10 pr-4 py-2.5 w-[240px] border-2 border-slate-200 rounded-xl text-sm font-medium text-slate-700 bg-white hover:border-blue-300 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all shadow-sm cursor-pointer"
-                  placeholder="Select a date"
-                />
-              </div>
-
-              {date && !isSameDay(date, new Date()) && (
-                <motion.button
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setDate(new Date())}
-                  className="px-4 py-2.5 bg-gradient-to-r from-slate-100 to-slate-200 hover:from-slate-200 hover:to-slate-300 text-slate-700 font-medium text-sm rounded-xl transition-all shadow-sm"
+                <select
+                  value={filter}
+                  onChange={(e) => setFilter(e.target.value as 'today' | 'week' | 'all')}
+                  className="appearance-none pl-4 pr-10 py-2.5 border-2 border-slate-200 rounded-xl text-sm font-medium text-slate-700 bg-white hover:border-blue-300 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all shadow-sm cursor-pointer"
                 >
-                  Today
-                </motion.button>
-              )}
+                  <option value="today">Today</option>
+                  <option value="week">This Week</option>
+                  <option value="all">All Time</option>
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-500 pointer-events-none" />
+              </div>
             </div>
           </div>
 

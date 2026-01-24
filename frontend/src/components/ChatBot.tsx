@@ -29,17 +29,17 @@ const faqs: FAQ[] = [
     },
     {
         question: "What are the new pricing plans?",
-        answer: "We now offer scan-based packages with expiration dates:\n\n💚 Free Plan: 5 scans (lifetime, no expiration)\n📦 Monthly Pack: ₹150 for 100 scans (valid 31 days)\n🎁 Yearly Pack: ₹1500 for 5000 scans (valid 365 days)\n\n✨ Yearly pack = ₹0.30 per scan (80% cheaper!)\n\nAfter expiration, your account reverts to the Free Plan (5 scans). Scan packs expire based on calendar days, not usage!",
-        keywords: ["pricing", "price", "cost", "plans", "monthly", "yearly", "how much", "rupees", "payment"]
+        answer: "We now offer flexible pricing options:\n\n� Custom Scans: ₹20 per scan\n• Buy exactly what you need\n• NEVER expire!\n• Perfect for occasional users\n\n📦 Monthly Pack: ₹500 for 100 scans (valid 31 days)\n• ₹5 per scan\n• 75% cheaper than custom\n\n🎁 Yearly Pack: ₹5000 for 2000 scans (valid 365 days)\n• ₹2.50 per scan\n• 87.5% cheaper than custom\n• 50% cheaper than monthly!\n\n✨ Custom scans accumulate and NEVER expire. Plan scans expire after their validity period!",
+        keywords: ["pricing", "price", "cost", "plans", "monthly", "yearly", "how much", "rupees", "payment", "custom", "scans"]
     },
     {
         question: "Do my scans expire?",
-        answer: "Yes! Scan packs are time-based:\n\n⏰ Monthly Pack: Expires after 31 days from purchase\n📅 Yearly Pack: Expires after 365 days from purchase\n🆓 Free Plan: Never expires\n\n⚠️ Important:\n• Timer counts down every day (even if you don't use the app)\n• Unused scans don't carry over after expiration\n• After expiry, you'll automatically get 5 free scans\n• You can track your expiry date on the Dashboard\n\nThink of it like a gym membership - it expires based on time, not usage!",
+        answer: "It depends on the type:\n\n✅ Custom Scans: NEVER expire!\n• They're yours forever\n• Accumulate over time\n• Perfect for long-term use\n\n⏰ Plan Scans:\n• Monthly Pack: Expires after 31 days\n• Yearly Pack: Expires after 365 days\n\n⚠️ Important:\n• Plan timers count down daily (even if unused)\n• After plan expiry, you keep your custom scans\n• You get 5 free scans if you have no custom scans\n• Track expiry date on Dashboard\n\nCustom scans = permanent | Plan scans = temporary!",
         keywords: ["expire", "expiration", "validity", "how long", "duration", "when", "time limit", "scans expire"]
     },
     {
         question: "How many free scans do I get?",
-        answer: "New users receive 5 FREE scans to try our AI models! You can see your remaining scans on the Dashboard.\n\nWant more scans?\n📦 Monthly: 100 scans for ₹150 (31 days)\n🎁 Yearly: 5000 scans for ₹1500 (365 days)\n\nBenefits include:\n✨ High-quality AI analyses\n📊 Priority processing\n📈 Advanced analytics\n🎯 All disease models\n\nCheck the Pricing page for details!",
+        answer: "New users receive 5 FREE scans to try our AI models! You can see your remaining scans on the Dashboard.\n\nWant more scans?\n💰 Custom: ₹20 per scan (never expires!)\n📦 Monthly: 100 scans for ₹500 (31 days)\n🎁 Yearly: 2000 scans for ₹5000 (365 days)\n\nBenefits include:\n✨ High-quality AI analyses\n📊 Priority processing\n📈 Advanced analytics\n🎯 All disease models\n\nCheck the Pricing page for details!",
         keywords: ["free", "scans", "remaining", "limit", "how many", "trial"]
     },
     {
@@ -116,6 +116,11 @@ const faqs: FAQ[] = [
         question: "How is my data used to train AI models?",
         answer: "Data Usage & Privacy:\n\n🔒 Your Privacy First:\n• Images are anonymized before any training\n• All personal information removed\n• You can opt-out anytime in Settings\n\n🤖 How We Improve:\n✅ Anonymized images may help train models\n✅ Only if you give explicit consent\n✅ Makes AI more accurate for everyone\n✅ Strictly compliant with DPDP Act 2023\n\n❌ We NEVER:\n• Share identifiable medical data\n• Sell your information\n• Use data without permission\n\nYour data helps save lives while staying completely private!",
         keywords: ["training", "data usage", "ai training", "privacy", "consent", "anonymized"]
+    },
+    {
+        question: "What happens when I have both custom scans and plan scans?",
+        answer: "Great question! Here's how it works when you have BOTH types:\\n\\n🎯 Smart Consumption System:\\n\\nWhen you analyze an image, the system uses:\\n1️⃣ PLAN scans first (they expire, so use them!)\\n2️⃣ CUSTOM scans second (they never expire, so saved for later)\\n\\n📊 Example Scenario:\\n\\nDay 1: You buy 20 custom scans (₹400)\\n→ Custom: 20 | Plan: 0\\n\\nDay 5: You buy Monthly Pack (₹500)\\n→ Custom: 20 | Plan: 100 | Total: 120\\n→ Expiry: 31 days from now\\n\\nDay 10: You use 30 scans\\n→ Custom: 20 (NOT touched!)\\n→ Plan: 70 (100 - 30 = 70)\\n→ System used plan scans first!\\n\\nDay 36: Monthly plan EXPIRES\\n→ Custom: 20 (PRESERVED!)\\n→ Plan: 0 (expired)\\n→ You still have 20 custom scans forever!\\n\\n✨ Benefits:\\n• Never waste permanent scans\\n• Always use expiring scans first\\n• Custom scans = insurance policy\\n• Dashboard shows both types separately\\n\\n💡 Smart Strategy: Buy custom scans for backup, use plan scans for regular use!",
+        keywords: ["both scans", "custom and plan", "together", "combination", "mixed", "which used first", "priority", "consumption", "plan expires", "what happens", "scenario", "example"]
     }
 ];
 
@@ -224,8 +229,8 @@ export function ChatBot() {
         "How do I start?",
         "What are the pricing plans?",
         "Do my scans expire?",
+        "What happens when I have both custom scans and plan scans?",
         "Can you interpret blood tests?",
-        "What if image quality is poor?",
         "How accurate is the AI?"
     ];
 

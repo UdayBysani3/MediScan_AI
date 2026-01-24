@@ -123,7 +123,8 @@ MongoClient.connect(mongoUri)
                 const { salt, hash } = hashPassword(password);
                 const newUser = {
                     name, mobile, passwordHash: hash, passwordSalt: salt,
-                    accountType: 'free', analysisCount: 0, maxScans: 5, createdAt: new Date()
+                    accountType: 'free', analysisCount: 0, maxScans: 5,
+                    customScans: 0, planScans: 0, createdAt: new Date()
                 };
                 const result = await users.insertOne(newUser);
                 const token = jwt.sign({ userId: result.insertedId }, process.env.JWT_SECRET, { expiresIn: '7d' });
@@ -294,6 +295,8 @@ MongoClient.connect(mongoUri)
                     accountType: 'free',
                     analysisCount: 0,
                     maxScans: 5,
+                    customScans: 0,
+                    planScans: 0,
                     createdAt: new Date()
                 };
 
@@ -384,13 +387,14 @@ MongoClient.connect(mongoUri)
         // --- NEW: Razorpay Order Creation ---
         app.post('/create-order', authenticateToken, async (req, res) => {
             try {
-                const { amount, planType } = req.body; // planType: 'monthly' or 'yearly'
+                const { amount, planType, scanCount } = req.body; // planType: 'monthly', 'yearly', or 'custom'
                 const order = await razorpay.orders.create({
                     amount: amount * 100,
                     currency: "INR",
                     receipt: `receipt_${Date.now()}`,
                     notes: {
-                        planType: planType || 'monthly'
+                        planType: planType || 'monthly',
+                        scanCount: scanCount || 0
                     }
                 });
                 res.json(order);
@@ -403,21 +407,75 @@ MongoClient.connect(mongoUri)
         // --- NEW: Razorpay Payment Verification with Expiration Logic ---
         app.post('/verify-payment', authenticateToken, async (req, res) => {
             try {
-                const { razorpay_order_id, razorpay_payment_id, razorpay_signature, planType } = req.body;
+                const { razorpay_order_id, razorpay_payment_id, razorpay_signature, planType, scanCount } = req.body;
                 const text = `${razorpay_order_id}|${razorpay_payment_id}`;
                 const expectedSignature = crypto.createHmac('sha256', process.env.TEST_KEY_SECRET).update(text).digest('hex');
 
                 if (expectedSignature === razorpay_signature) {
-                    // Determine scan limit and expiry based on plan type
+                    // Handle custom scan purchase (per-scan pricing)
+                    if (planType === 'custom') {
+                        const scansToAdd = parseInt(scanCount) || 0;
+                        if (scansToAdd <= 0) {
+                            return res.status(400).json({ status: 'error', message: 'Invalid scan count.' });
+                        }
+
+                        // Get current user data
+                        const currentUser = await users.findOne({ _id: req.user._id });
+                        const currentCustomScans = currentUser.customScans || 0;
+                        const currentPlanScans = currentUser.planScans || 0;
+
+                        // Add to custom scans (these never expire)
+                        const newCustomScans = currentCustomScans + scansToAdd;
+                        const newMaxScans = newCustomScans + currentPlanScans;
+
+                        await users.updateOne(
+                            { _id: req.user._id },
+                            {
+                                $set: {
+                                    customScans: newCustomScans,
+                                    maxScans: newMaxScans
+                                },
+                                $push: {
+                                    scanPurchases: {
+                                        scanCount: scansToAdd,
+                                        purchaseDate: new Date(),
+                                        paymentId: razorpay_payment_id
+                                    }
+                                }
+                            }
+                        );
+
+                        console.log(`✅ Payment verified for user ${req.user._id}. Added ${scansToAdd} custom scans. New total: ${newMaxScans} (${newCustomScans} custom + ${currentPlanScans} plan)`);
+
+                        return res.json({
+                            status: 'success',
+                            message: 'Payment verified successfully.',
+                            planDetails: {
+                                accountType: currentUser.accountType,
+                                maxScans: newMaxScans,
+                                scansAdded: scansToAdd
+                            }
+                        });
+                    }
+
+                    // Handle all plan types (with backward compatibility)
                     let scanLimit, accountType, validityDays;
 
-                    if (planType === 'monthly') {
+                    if (planType === 'monthly' || planType === 'small-business-monthly') {
                         scanLimit = 100;
-                        accountType = 'monthly';
+                        accountType = 'small-business-monthly';
                         validityDays = 30;
-                    } else if (planType === 'yearly') {
-                        scanLimit = 5000;
-                        accountType = 'yearly';
+                    } else if (planType === 'yearly' || planType === 'small-business-yearly') {
+                        scanLimit = 2000;
+                        accountType = 'small-business-yearly';
+                        validityDays = 365;
+                    } else if (planType === 'hospital-monthly' || planType === 'large-business-monthly') {
+                        scanLimit = 1000;
+                        accountType = 'large-business-monthly';
+                        validityDays = 30;
+                    } else if (planType === 'hospital-yearly' || planType === 'large-business-yearly') {
+                        scanLimit = 10000;
+                        accountType = 'large-business-yearly';
                         validityDays = 365;
                     } else {
                         return res.status(400).json({ status: 'error', message: 'Invalid plan type.' });
@@ -427,13 +485,19 @@ MongoClient.connect(mongoUri)
                     const expiryDate = new Date();
                     expiryDate.setDate(expiryDate.getDate() + validityDays);
 
+                    // Get current custom scans to preserve them
+                    const currentUser = await users.findOne({ _id: req.user._id });
+                    const customScans = currentUser.customScans || 0;
+                    const totalScans = scanLimit + customScans;
+
                     // Update user's account with scan limit and expiration date
                     await users.updateOne(
                         { _id: req.user._id },
                         {
                             $set: {
                                 accountType: accountType,
-                                maxScans: scanLimit,
+                                planScans: scanLimit,
+                                maxScans: totalScans,
                                 analysisCount: 0, // Reset usage count
                                 planExpiryDate: expiryDate,
                                 planPurchaseDate: new Date()
@@ -441,14 +505,14 @@ MongoClient.connect(mongoUri)
                         }
                     );
 
-                    console.log(`✅ Payment verified for user ${req.user._id}. Plan: ${accountType}, Scans: ${scanLimit}, Expires: ${expiryDate}`);
+                    console.log(`✅ Payment verified for user ${req.user._id}. Plan: ${accountType}, Scans: ${scanLimit}, CustomScans: ${customScans}, Total: ${totalScans}, Expires: ${expiryDate}`);
 
                     res.json({
                         status: 'success',
                         message: 'Payment verified successfully.',
                         planDetails: {
                             accountType,
-                            maxScans: scanLimit,
+                            maxScans: totalScans,
                             expiryDate: expiryDate
                         }
                     });
@@ -465,23 +529,43 @@ MongoClient.connect(mongoUri)
         const checkAndResetExpiredPlans = async () => {
             try {
                 const now = new Date();
-                const result = await users.updateMany(
-                    {
-                        planExpiryDate: { $exists: true, $lt: now },
-                        accountType: { $in: ['monthly', 'yearly'] }
-                    },
-                    {
-                        $set: {
-                            accountType: 'free',
-                            maxScans: 5,
-                            analysisCount: 0,
-                            planExpiryDate: null
-                        }
-                    }
-                );
 
-                if (result.modifiedCount > 0) {
-                    console.log(`🔄 Reset ${result.modifiedCount} expired plan(s) to free tier`);
+                // Find all users with expired plans (including all plan types)
+                const expiredUsers = await users.find({
+                    planExpiryDate: { $exists: true, $lt: now },
+                    accountType: {
+                        $in: [
+                            'monthly', 'yearly', // backward compatibility
+                            'small-business-monthly', 'small-business-yearly',
+                            'hospital-monthly', 'hospital-yearly', // backward compatibility
+                            'large-business-monthly', 'large-business-yearly'
+                        ]
+                    }
+                }).toArray();
+
+                if (expiredUsers.length > 0) {
+                    console.log(`🔄 Found ${expiredUsers.length} expired plan(s). Resetting to free tier while preserving custom scans...`);
+
+                    // Reset each user individually to preserve custom scans
+                    for (const user of expiredUsers) {
+                        const customScans = user.customScans || 0;
+                        const newMaxScans = customScans > 0 ? customScans : 0; // If they have custom scans, use those; otherwise 0 free scans
+
+                        await users.updateOne(
+                            { _id: user._id },
+                            {
+                                $set: {
+                                    accountType: 'free',
+                                    planScans: 0,
+                                    maxScans: newMaxScans,
+                                    analysisCount: 0,
+                                    planExpiryDate: null
+                                }
+                            }
+                        );
+
+                        console.log(`  ✅ Reset user ${user._id}. Preserved ${customScans} custom scans. New maxScans: ${newMaxScans}`);
+                    }
                 }
             } catch (error) {
                 console.error('Error checking expired plans:', error);
@@ -499,6 +583,23 @@ MongoClient.connect(mongoUri)
             if (!req.file) return res.status(400).json({ error: 'No image file provided.' });
 
             try {
+                // Check if user has scans available
+                const user = req.user;
+                const customScans = user.customScans || 0;
+                const planScans = user.planScans || 0;
+                const totalScans = customScans + planScans;
+                const usedScans = user.analysisCount || 0;
+                const remainingScans = totalScans - usedScans;
+
+                if (remainingScans <= 0) {
+                    return res.status(403).json({
+                        error: 'No scans remaining. Please purchase more scans or upgrade your plan.',
+                        customScans,
+                        planScans,
+                        usedScans
+                    });
+                }
+
                 const formData = new FormData();
                 formData.append('imageFile', req.file.buffer, { filename: req.file.originalname });
                 formData.append('modelId', req.body.modelId);
@@ -512,10 +613,47 @@ MongoClient.connect(mongoUri)
                     userId: req.user._id, modelId: req.body.modelId, result: response.data.prediction,
                     confidence: response.data.confidence, timestamp: new Date()
                 });
-                // Increment the user's scan count
-                await users.updateOne({ _id: req.user._id }, { $inc: { analysisCount: 1 } });
 
-                res.json(response.data);
+                // SMART SCAN REDUCTION LOGIC
+                // Priority: Use plan scans first (they expire), then custom scans (they don't expire)
+                let newPlanScans = planScans;
+                let newCustomScans = customScans;
+
+                if (planScans > 0) {
+                    // Use plan scan first
+                    newPlanScans = planScans - 1;
+                    console.log(`📊 Used 1 plan scan. Remaining: Plan=${newPlanScans}, Custom=${customScans}`);
+                } else if (customScans > 0) {
+                    // No plan scans left, use custom scan
+                    newCustomScans = customScans - 1;
+                    console.log(`📊 Used 1 custom scan. Remaining: Plan=0, Custom=${newCustomScans}`);
+                }
+
+                const newMaxScans = newPlanScans + newCustomScans;
+
+                // Update user's scan counts
+                await users.updateOne(
+                    { _id: req.user._id },
+                    {
+                        $set: {
+                            planScans: newPlanScans,
+                            customScans: newCustomScans,
+                            maxScans: newMaxScans
+                        },
+                        $inc: { analysisCount: 1 }
+                    }
+                );
+
+                // Add remaining scans info to response
+                res.json({
+                    ...response.data,
+                    scansInfo: {
+                        planScans: newPlanScans,
+                        customScans: newCustomScans,
+                        totalRemaining: newMaxScans - (usedScans + 1),
+                        scanUsed: planScans > 0 ? 'plan' : 'custom'
+                    }
+                });
             } catch (error) {
                 console.error('Error calling Python AI service:', error.message);
                 res.status(500).json({ error: 'Failed to analyze image.' });

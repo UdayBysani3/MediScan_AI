@@ -39,7 +39,9 @@ import {
   TrendingUp,
   Users,
   ChevronDown,
-  DollarSign
+  DollarSign,
+  Image,
+  X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Navbar from '@/components/Navbar';
@@ -87,6 +89,7 @@ const Upload: React.FC = () => {
   const [error, setError] = useState('');
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [cbcValues, setCbcValues] = useState({ wbc: '', rbc: '', platelets: '' });
+  const [showDemoModal, setShowDemoModal] = useState(false);
 
 
   React.useEffect(() => {
@@ -148,15 +151,11 @@ const Upload: React.FC = () => {
 
   const handleModelSelect = (model: DiseaseModel) => {
     setSelectedModel(model);
-  };
-
-  const handleContinueToUpload = () => {
-    if (selectedModel) {
-      if (selectedModel.id === 'bmi-calculator') {
-        setCurrentStep('analysis');
-      } else {
-        setCurrentStep('upload');
-      }
+    // Automatically navigate to the appropriate step
+    if (model.id === 'bmi-calculator') {
+      setCurrentStep('analysis');
+    } else {
+      setCurrentStep('upload');
     }
   };
 
@@ -844,37 +843,6 @@ const Upload: React.FC = () => {
                     selectedModel={selectedModel}
                   />
 
-                  {selectedModel && (
-                    <motion.div
-                      className="flex justify-center mt-8"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.4 }}
-                    >
-                      <motion.div
-                        whileHover={{ scale: 1.05, y: -2 }}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        <Button
-                          onClick={handleContinueToUpload}
-                          size="lg"
-                          className="bg-gradient-to-r from-blue-600 via-teal-600 to-green-600 hover:from-blue-700 hover:via-teal-700 hover:to-green-700 px-10 py-7 text-lg font-semibold shadow-2xl hover:shadow-blue-500/50 transition-all"
-                        >
-                          {selectedModel.id === 'bmi-calculator' ? (
-                            <>
-                              <Calculator className="mr-2 h-5 w-5" />
-                              Open BMI Calculator
-                            </>
-                          ) : (
-                            <>
-                              Continue to Upload
-                              <ArrowRight className="ml-2 h-5 w-5" />
-                            </>
-                          )}
-                        </Button>
-                      </motion.div>
-                    </motion.div>
-                  )}
                 </CardContent>
               </Card>
             </motion.div>
@@ -954,14 +922,26 @@ const Upload: React.FC = () => {
                         Upload your {selectedModel?.supportedFormats?.join(', ').toLowerCase() || 'medical images'} for {selectedModel?.name} analysis
                       </CardDescription>
                     </div>
-                    <Button
-                      variant="outline"
-                      onClick={() => setCurrentStep('model')}
-                      className="flex items-center space-x-2 border-2 hover:border-blue-300 hover:bg-blue-50/50"
-                    >
-                      <ArrowLeft className="h-4 w-4" />
-                      <span>Change Model</span>
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                        <Button
+                          variant="outline"
+                          onClick={() => setShowDemoModal(true)}
+                          className="flex items-center space-x-2 border-2 border-purple-300 hover:border-purple-400 hover:bg-purple-50/50 text-purple-700"
+                        >
+                          <Image className="h-4 w-4" />
+                          <span>Images Demo</span>
+                        </Button>
+                      </motion.div>
+                      <Button
+                        variant="outline"
+                        onClick={() => setCurrentStep('model')}
+                        className="flex items-center space-x-2 border-2 hover:border-blue-300 hover:bg-blue-50/50"
+                      >
+                        <ArrowLeft className="h-4 w-4" />
+                        <span>Change Model</span>
+                      </Button>
+                    </div>
                   </div>
                 </CardHeader>
 
@@ -1247,6 +1227,189 @@ const Upload: React.FC = () => {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Images Demo Modal */}
+      <AnimatePresence>
+        {showDemoModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowDemoModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="bg-white rounded-3xl max-w-5xl w-full max-h-[90vh] shadow-2xl border-2 border-purple-200 relative overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Decorative Background */}
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-white to-blue-50 opacity-60"></div>
+
+              {/* Close Button */}
+              <motion.button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowDemoModal(false);
+                }}
+                whileHover={{ scale: 1.1, rotate: 90 }}
+                whileTap={{ scale: 0.9 }}
+                transition={{ duration: 0.2 }}
+                className="absolute top-4 right-4 z-50 p-2 rounded-full bg-purple-100 hover:bg-purple-200 transition-colors shadow-lg cursor-pointer"
+              >
+                <X className="h-5 w-5 text-purple-700" />
+              </motion.button>
+
+              {/* Scrollable Content */}
+              <div className="relative z-10 overflow-y-auto max-h-[85vh] p-8">
+                {/* Header */}
+                <motion.div
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                  className="text-center mb-8"
+                >
+                  <h2 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-3">
+                    Sample Medical Images
+                  </h2>
+                  <p className="text-slate-600 text-lg">
+                    Example images for each disease detection model
+                  </p>
+                </motion.div>
+
+                {/* Demo Images Grid */}
+                <div className="grid md:grid-cols-3 gap-6">
+                  {/* Diabetic Retinopathy Demo */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    whileHover={{ scale: 1.05, y: -5 }}
+                    className="group relative"
+                  >
+                    <div className="bg-gradient-to-br from-teal-50 to-white p-6 rounded-2xl border-2 border-teal-200 hover:border-teal-400 hover:shadow-xl transition-all duration-300">
+                      <div className="absolute inset-0 bg-gradient-to-br from-teal-400/10 to-blue-400/10 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+                      <div className="relative z-10">
+                        <div className="flex items-center justify-center mb-4">
+                          <div className="p-3 bg-teal-100 rounded-full">
+                            <Eye className="h-8 w-8 text-teal-600" />
+                          </div>
+                        </div>
+
+                        <h3 className="text-xl font-bold text-teal-900 text-center mb-3">
+                          Diabetic Retinopathy
+                        </h3>
+
+                        <div className="w-full aspect-square rounded-xl overflow-hidden border-2 border-teal-300 shadow-lg mb-4">
+                          <img
+                            src="/assets/eye.jpg"
+                            alt="Diabetic Retinopathy Sample"
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                          />
+                        </div>
+
+                        <p className="text-sm text-teal-700 text-center">
+                          Retinal fundus image showing blood vessel abnormalities
+                        </p>
+                      </div>
+                    </div>
+                  </motion.div>
+
+                  {/* Brain Tumor Demo */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                    whileHover={{ scale: 1.05, y: -5 }}
+                    className="group relative"
+                  >
+                    <div className="bg-gradient-to-br from-slate-50 to-white p-6 rounded-2xl border-2 border-slate-300 hover:border-slate-500 hover:shadow-xl transition-all duration-300">
+                      <div className="absolute inset-0 bg-gradient-to-br from-slate-400/10 to-gray-400/10 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+                      <div className="relative z-10">
+                        <div className="flex items-center justify-center mb-4">
+                          <div className="p-3 bg-slate-200 rounded-full">
+                            <Brain className="h-8 w-8 text-slate-700" />
+                          </div>
+                        </div>
+
+                        <h3 className="text-xl font-bold text-slate-900 text-center mb-3">
+                          Brain Tumor Detection
+                        </h3>
+
+                        <div className="w-full aspect-square rounded-xl overflow-hidden border-2 border-slate-400 shadow-lg mb-4">
+                          <img
+                            src="/assets/brain.jpg"
+                            alt="Brain Tumor Sample"
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                          />
+                        </div>
+
+                        <p className="text-sm text-slate-700 text-center">
+                          MRI scan for detecting brain abnormalities
+                        </p>
+                      </div>
+                    </div>
+                  </motion.div>
+
+                  {/* Skin Disease Demo */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                    whileHover={{ scale: 1.05, y: -5 }}
+                    className="group relative"
+                  >
+                    <div className="bg-gradient-to-br from-blue-50 to-white p-6 rounded-2xl border-2 border-blue-200 hover:border-blue-400 hover:shadow-xl transition-all duration-300">
+                      <div className="absolute inset-0 bg-gradient-to-br from-blue-400/10 to-purple-400/10 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+                      <div className="relative z-10">
+                        <div className="flex items-center justify-center mb-4">
+                          <div className="p-3 bg-blue-100 rounded-full">
+                            <Scan className="h-8 w-8 text-blue-600" />
+                          </div>
+                        </div>
+
+                        <h3 className="text-xl font-bold text-blue-900 text-center mb-3">
+                          Skin Disease Detection
+                        </h3>
+
+                        <div className="w-full aspect-square rounded-xl overflow-hidden border-2 border-blue-300 shadow-lg mb-4">
+                          <img
+                            src="/assets/skin.jpg"
+                            alt="Skin Disease Sample"
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                          />
+                        </div>
+
+                        <p className="text-sm text-blue-700 text-center">
+                          Dermatological image for skin condition analysis
+                        </p>
+                      </div>
+                    </div>
+                  </motion.div>
+                </div>
+
+                {/* Footer Note */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                  className="mt-8 p-4 bg-purple-50 border border-purple-200 rounded-xl"
+                >
+                  <p className="text-center text-sm text-purple-800">
+                    <strong>Note:</strong> These are sample images for demonstration purposes. Upload your own medical images for accurate AI-powered analysis.
+                  </p>
+                </motion.div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <PaymentModal isOpen={showPaymentModal} onClose={() => setShowPaymentModal(false)} onSuccess={handlePaymentSuccess} />
     </div >
