@@ -619,8 +619,8 @@ MongoClient.connect(mongoUri)
                 formData.append('modelId', req.body.modelId);
 
                 // Point to deployed Python Flask server on Render
-                const pythonApiUrl = 'http://localhost:8000/analyze-image';
-                // const pythonApiUrl = process.env.PYTHON_AI_URL || 'https://mediscan-ai-server.onrender.com/analyze-image';
+                // const pythonApiUrl = 'http://localhost:8000/analyze-image';
+                const pythonApiUrl = process.env.PYTHON_AI_URL || 'https://mediscan-ai-server.onrender.com/analyze-image';
                 const response = await axios.post(pythonApiUrl, formData, { headers: { ...formData.getHeaders() } });
 
                 // Log the analysis in the database
