@@ -1,7 +1,0 @@
-Flask
-flask-cors
-tensorflow
-Pillow
-numpy
-os
-io
