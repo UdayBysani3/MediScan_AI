@@ -215,11 +215,18 @@ const Upload: React.FC = () => {
       formData.append('imageFile', selectedFile);
       formData.append('modelId', selectedModel.id);
 
+      // Create AbortController for 120-second timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 120000); // 120 seconds
+
       const response = await fetch(`${API_URL}/analyze`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },
         body: formData,
+        signal: controller.signal, // Add abort signal
       });
+
+      clearTimeout(timeoutId); // Clear timeout if request succeeds
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -246,7 +253,14 @@ const Upload: React.FC = () => {
 
     } catch (err) {
       clearInterval(progressInterval);
-      setError(err instanceof Error ? err.message : 'Analysis failed');
+
+      // Handle timeout specifically
+      if (err instanceof Error && err.name === 'AbortError') {
+        setError('Request timed out. The AI service may be waking up. Please try again in a moment.');
+      } else {
+        setError(err instanceof Error ? err.message : 'Analysis failed');
+      }
+
       setIsAnalyzing(false);
       setAnalysisProgress(0);
     }
