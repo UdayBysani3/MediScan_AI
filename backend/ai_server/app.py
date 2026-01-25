@@ -10,17 +10,30 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app) # Allow requests from your Node.js server
 
-# 2. DEEP LEARNING MODEL SETUP
-try:
-    MODELS = {
-        'diabetic-retinopathy': tf.keras.models.load_model('models/diabeticRetinopathy.keras'),
-        'skin-disease': tf.keras.models.load_model('models/skinDisease.keras'),
-        'brain-tumor': tf.keras.models.load_model('models/brainTumor.keras')
-    }
-    print("✅ All AI models loaded successfully.")
-except Exception as e:
-    print(f"❌ Error loading models: {e}")
-    MODELS = {}
+# 2. DEEP LEARNING MODEL SETUP - LAZY LOADING
+# Store loaded models in memory cache
+LOADED_MODELS = {}
+
+# Model paths (don't load yet - save memory!)
+MODEL_PATHS = {
+    'diabetic-retinopathy': 'models/diabeticRetinopathy.keras',
+    'skin-disease': 'models/skinDisease.keras',
+    'brain-tumor': 'models/brainTumor.keras'
+}
+
+def get_model(model_id):
+    """Load model on-demand to save memory"""
+    if model_id not in LOADED_MODELS:
+        print(f"🔄 Loading model: {model_id}")
+        try:
+            LOADED_MODELS[model_id] = tf.keras.models.load_model(MODEL_PATHS[model_id])
+            print(f"✅ Model loaded: {model_id}")
+        except Exception as e:
+            print(f"❌ Error loading {model_id}: {e}")
+            return None
+    return LOADED_MODELS[model_id]
+
+print("✅ AI server ready - models will load on-demand")
 
 CLASS_NAMES = {
     'diabetic-retinopathy': ['Diabetic Retinopathy', 'Normal'],
@@ -44,13 +57,17 @@ def analyze_image():
     file = request.files['imageFile']
     model_id = request.form['modelId']
 
-    if model_id not in MODELS:
+    if model_id not in MODEL_PATHS:
         return jsonify({"error": f"Invalid model ID: {model_id}"}), 400
 
     try:
+        # Load model on-demand (lazy loading)
+        model = get_model(model_id)
+        if model is None:
+            return jsonify({"error": "Failed to load AI model"}), 500
+        
         image_bytes = file.read()
         processed_image = preprocess_image(image_bytes)
-        model = MODELS[model_id]
 
         prediction_scores = model.predict(processed_image)
         confidence = float(np.max(prediction_scores[0]))
