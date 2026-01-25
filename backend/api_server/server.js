@@ -587,8 +587,19 @@ MongoClient.connect(mongoUri)
                 const user = req.user;
                 const customScans = user.customScans || 0;
                 const planScans = user.planScans || 0;
-                const totalScans = customScans + planScans;
+                const maxScans = user.maxScans || 0;
                 const usedScans = user.analysisCount || 0;
+
+                // Calculate total scans - handle both old and new user formats
+                let totalScans;
+                if (customScans > 0 || planScans > 0) {
+                    // New format: use customScans + planScans
+                    totalScans = customScans + planScans;
+                } else {
+                    // Old format: use maxScans directly (for backward compatibility)
+                    totalScans = maxScans;
+                }
+
                 const remainingScans = totalScans - usedScans;
 
                 if (remainingScans <= 0) {
@@ -596,7 +607,10 @@ MongoClient.connect(mongoUri)
                         error: 'No scans remaining. Please purchase more scans or upgrade your plan.',
                         customScans,
                         planScans,
-                        usedScans
+                        maxScans,
+                        totalScans,
+                        usedScans,
+                        remainingScans
                     });
                 }
 
@@ -605,7 +619,8 @@ MongoClient.connect(mongoUri)
                 formData.append('modelId', req.body.modelId);
 
                 // Point to deployed Python Flask server on Render
-                const pythonApiUrl = process.env.PYTHON_AI_URL || 'https://mediscan-ai-server.onrender.com/analyze-image' || 'http://localhost:8000/analyze-image';
+                const pythonApiUrl = 'http://localhost:8000/analyze-image';
+                // const pythonApiUrl = process.env.PYTHON_AI_URL || 'https://mediscan-ai-server.onrender.com/analyze-image';
                 const response = await axios.post(pythonApiUrl, formData, { headers: { ...formData.getHeaders() } });
 
                 // Log the analysis in the database
@@ -618,31 +633,42 @@ MongoClient.connect(mongoUri)
                 // Priority: Use plan scans first (they expire), then custom scans (they don't expire)
                 let newPlanScans = planScans;
                 let newCustomScans = customScans;
+                let newMaxScans;
 
-                if (planScans > 0) {
-                    // Use plan scan first
-                    newPlanScans = planScans - 1;
-                    console.log(`📊 Used 1 plan scan. Remaining: Plan=${newPlanScans}, Custom=${customScans}`);
-                } else if (customScans > 0) {
-                    // No plan scans left, use custom scan
-                    newCustomScans = customScans - 1;
-                    console.log(`📊 Used 1 custom scan. Remaining: Plan=0, Custom=${newCustomScans}`);
+                // Handle old users (only have maxScans) vs new users (have customScans/planScans)
+                if (customScans > 0 || planScans > 0) {
+                    // New user format: separate tracking
+                    if (planScans > 0) {
+                        // Use plan scan first
+                        newPlanScans = planScans - 1;
+                        console.log(`📊 Used 1 plan scan. Remaining: Plan=${newPlanScans}, Custom=${customScans}`);
+                    } else if (customScans > 0) {
+                        // No plan scans left, use custom scan
+                        newCustomScans = customScans - 1;
+                        console.log(`📊 Used 1 custom scan. Remaining: Plan=0, Custom=${newCustomScans}`);
+                    }
+                    newMaxScans = newPlanScans + newCustomScans;
+                } else {
+                    // Old user format: just decrement maxScans
+                    newMaxScans = maxScans; // Keep maxScans as is, only increment analysisCount
+                    console.log(`📊 Used 1 scan (legacy user). Remaining: ${newMaxScans - (usedScans + 1)}`);
                 }
 
-                const newMaxScans = newPlanScans + newCustomScans;
-
                 // Update user's scan counts
-                await users.updateOne(
-                    { _id: req.user._id },
-                    {
-                        $set: {
-                            planScans: newPlanScans,
-                            customScans: newCustomScans,
-                            maxScans: newMaxScans
-                        },
-                        $inc: { analysisCount: 1 }
-                    }
-                );
+                const updateData = {
+                    $inc: { analysisCount: 1 }
+                };
+
+                // Only update new fields if user has them
+                if (customScans > 0 || planScans > 0) {
+                    updateData.$set = {
+                        planScans: newPlanScans,
+                        customScans: newCustomScans,
+                        maxScans: newMaxScans
+                    };
+                }
+
+                await users.updateOne({ _id: req.user._id }, updateData);
 
                 // Add remaining scans info to response
                 res.json({
@@ -651,7 +677,7 @@ MongoClient.connect(mongoUri)
                         planScans: newPlanScans,
                         customScans: newCustomScans,
                         totalRemaining: newMaxScans - (usedScans + 1),
-                        scanUsed: planScans > 0 ? 'plan' : 'custom'
+                        scanUsed: planScans > 0 ? 'plan' : (customScans > 0 ? 'custom' : 'legacy')
                     }
                 });
             } catch (error) {

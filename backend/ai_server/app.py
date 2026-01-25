@@ -88,8 +88,8 @@ def analyze_image():
 # 4. RUN THE AI SERVER
 if __name__ == "__main__":
     # Run on a different port, e.g., 8000
-    # app.run(port=8000, debug=True)
+    app.run(port=8000, debug=True)
     # Get port from environment variable for cloud deployment (Render, Heroku, etc.)
-    port = int(os.environ.get("PORT", 8000))
+    # port = int(os.environ.get("PORT", 8000))
     # Use 0.0.0.0 to allow external connections, disable debug in production
-    app.run(host="0.0.0.0", port=port, debug=False)
+    # app.run(host="0.0.0.0", port=port, debug=False)
