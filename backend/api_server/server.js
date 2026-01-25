@@ -619,9 +619,15 @@ MongoClient.connect(mongoUri)
                 formData.append('modelId', req.body.modelId);
 
                 // Point to deployed Python Flask server on Render
-                // const pythonApiUrl = 'http://localhost:8000/analyze-image';
                 const pythonApiUrl = process.env.PYTHON_AI_URL || 'https://mediscan-ai-server.onrender.com/analyze-image';
-                const response = await axios.post(pythonApiUrl, formData, { headers: { ...formData.getHeaders() } });
+
+                // Axios request with 120-second timeout for cold starts
+                const response = await axios.post(pythonApiUrl, formData, {
+                    headers: { ...formData.getHeaders() },
+                    timeout: 120000, // 120 seconds timeout
+                    maxContentLength: Infinity,
+                    maxBodyLength: Infinity
+                });
 
                 // Log the analysis in the database
                 await analyses.insertOne({
