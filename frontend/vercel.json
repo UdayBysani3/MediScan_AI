@@ -1,0 +1,9 @@
+{
+    "buildCommand": "pnpm install --frozen-lockfile && pnpm build",
+    "outputDirectory": "dist",
+    "installCommand": "pnpm install --frozen-lockfile",
+    "framework": "vite",
+    "env": {
+        "PNPM_VERSION": "8.10.0"
+    }
+}
