@@ -123,8 +123,12 @@ MongoClient.connect(mongoUri)
                 const { salt, hash } = hashPassword(password);
                 const newUser = {
                     name, mobile, passwordHash: hash, passwordSalt: salt,
-                    accountType: 'free', analysisCount: 0, maxScans: 5,
-                    customScans: 0, planScans: 0, createdAt: new Date()
+                    accountType: 'free',
+                    analysisCount: 0, // Lifetime total scans
+                    planUsage: 0,     // Scans used in current plan period
+                    maxScans: 5,      // Plan limit (5 for free tier)
+                    customScans: 0,   // Independent wallet for purchased scans
+                    createdAt: new Date()
                 };
                 const result = await users.insertOne(newUser);
                 const token = jwt.sign({ userId: result.insertedId }, process.env.JWT_SECRET, { expiresIn: '7d' });
@@ -287,16 +291,17 @@ MongoClient.connect(mongoUri)
                 const { salt, hash } = hashPassword(password);
 
                 // 4. Create the new user object
+                // 4. Create the new user object
                 const newUser = {
                     name,
                     mobile,
                     passwordHash: hash,
                     passwordSalt: salt,
                     accountType: 'free',
-                    analysisCount: 0,
-                    maxScans: 5,
-                    customScans: 0,
-                    planScans: 0,
+                    analysisCount: 0, // Lifetime total
+                    planUsage: 0,     // Current plan usage
+                    maxScans: 5,      // Plan limit
+                    customScans: 0,   // Custom balance
                     createdAt: new Date()
                 };
 
@@ -404,7 +409,7 @@ MongoClient.connect(mongoUri)
             }
         });
 
-        // --- NEW: Razorpay Payment Verification with Expiration Logic ---
+        // --- NEW: Razorpay Payment Verification (Updated Logic) ---
         app.post('/verify-payment', authenticateToken, async (req, res) => {
             try {
                 const { razorpay_order_id, razorpay_payment_id, razorpay_signature, planType, scanCount } = req.body;
@@ -412,31 +417,21 @@ MongoClient.connect(mongoUri)
                 const expectedSignature = crypto.createHmac('sha256', process.env.TEST_KEY_SECRET).update(text).digest('hex');
 
                 if (expectedSignature === razorpay_signature) {
-                    // Handle custom scan purchase (per-scan pricing)
+                    const currentUser = await users.findOne({ _id: req.user._id });
+
+                    // 1. Handle CUSTOM SCAN Purchase
+                    // Rule: Independent of subscription. Does NOT increase maxScans.
                     if (planType === 'custom') {
                         const scansToAdd = parseInt(scanCount) || 0;
-                        if (scansToAdd <= 0) {
-                            return res.status(400).json({ status: 'error', message: 'Invalid scan count.' });
-                        }
-
-                        // Get current user data
-                        const currentUser = await users.findOne({ _id: req.user._id });
-                        const currentCustomScans = currentUser.customScans || 0;
-                        const currentPlanScans = currentUser.planScans || 0;
-
-                        // Add to custom scans (these never expire)
-                        const newCustomScans = currentCustomScans + scansToAdd;
-                        const newMaxScans = newCustomScans + currentPlanScans;
+                        if (scansToAdd <= 0) return res.status(400).json({ status: 'error', message: 'Invalid scan count.' });
 
                         await users.updateOne(
                             { _id: req.user._id },
                             {
-                                $set: {
-                                    customScans: newCustomScans,
-                                    maxScans: newMaxScans
-                                },
+                                $inc: { customScans: scansToAdd },
                                 $push: {
                                     scanPurchases: {
+                                        type: 'custom',
                                         scanCount: scansToAdd,
                                         purchaseDate: new Date(),
                                         paymentId: razorpay_payment_id
@@ -445,17 +440,8 @@ MongoClient.connect(mongoUri)
                             }
                         );
 
-                        console.log(`✅ Payment verified for user ${req.user._id}. Added ${scansToAdd} custom scans. New total: ${newMaxScans} (${newCustomScans} custom + ${currentPlanScans} plan)`);
-
-                        return res.json({
-                            status: 'success',
-                            message: 'Payment verified successfully.',
-                            planDetails: {
-                                accountType: currentUser.accountType,
-                                maxScans: newMaxScans,
-                                scansAdded: scansToAdd
-                            }
-                        });
+                        console.log(`✅ User ${req.user._id} bought ${scansToAdd} custom scans.`);
+                        return res.json({ status: 'success', message: 'Custom scans added.' });
                     }
 
                     // Handle all plan types (with backward compatibility)
@@ -481,46 +467,51 @@ MongoClient.connect(mongoUri)
                         return res.status(400).json({ status: 'error', message: 'Invalid plan type.' });
                     }
 
-                    // Calculate expiration date
-                    const expiryDate = new Date();
-                    expiryDate.setDate(expiryDate.getDate() + validityDays);
+                    // Expiry & Stacking Logic
+                    const now = new Date();
+                    let newExpiryDate = new Date();
+                    newExpiryDate.setDate(now.getDate() + validityDays);
 
-                    // Get current custom scans to preserve them
-                    const currentUser = await users.findOne({ _id: req.user._id });
-                    const customScans = currentUser.customScans || 0;
-                    const totalScans = scanLimit + customScans;
+                    // Check if stacking same plan type
+                    const currentExpiry = currentUser.planExpiryDate ? new Date(currentUser.planExpiryDate) : null;
+                    const isSamePlan = currentUser.accountType === accountType;
 
-                    // Update user's account with scan limit and expiration date
+                    let newMaxScans = scanLimit;
+                    let currentPlanUsage = currentUser.planUsage || 0;
+
+                    if (isSamePlan && currentExpiry && currentExpiry > now) {
+                        // Stack: Extend date by validity period
+                        const extendedDate = new Date(currentExpiry);
+                        extendedDate.setDate(extendedDate.getDate() + validityDays);
+                        newExpiryDate = extendedDate;
+                        newMaxScans = (currentUser.maxScans || 0) + scanLimit;
+
+                    } else {
+                        // New Plan or Upgrade/Downgrade: Reset Plan Usage
+                        currentPlanUsage = 0;
+                    }
+
                     await users.updateOne(
                         { _id: req.user._id },
                         {
                             $set: {
                                 accountType: accountType,
-                                planScans: scanLimit,
-                                maxScans: totalScans,
-                                analysisCount: 0, // Reset usage count
-                                planExpiryDate: expiryDate,
-                                planPurchaseDate: new Date()
+                                maxScans: newMaxScans,
+                                planUsage: currentPlanUsage, // Reset if new plan, keep if stacking
+                                planExpiryDate: newExpiryDate,
+                                planPurchaseDate: now
                             }
                         }
                     );
 
-                    console.log(`✅ Payment verified for user ${req.user._id}. Plan: ${accountType}, Scans: ${scanLimit}, CustomScans: ${customScans}, Total: ${totalScans}, Expires: ${expiryDate}`);
+                    console.log(`✅ Plan activated for ${req.user._id}: ${accountType}, Limit: ${newMaxScans}, Expires: ${newExpiryDate}`);
+                    res.json({ status: 'success', message: 'Plan activated.', planDetails: { accountType, maxScans: newMaxScans, expiryDate: newExpiryDate } });
 
-                    res.json({
-                        status: 'success',
-                        message: 'Payment verified successfully.',
-                        planDetails: {
-                            accountType,
-                            maxScans: totalScans,
-                            expiryDate: expiryDate
-                        }
-                    });
                 } else {
-                    res.status(400).json({ status: 'error', message: 'Invalid payment signature.' });
+                    res.status(400).json({ status: 'error', message: 'Invalid signature.' });
                 }
             } catch (error) {
-                console.error('Payment verification error:', error);
+                console.error(error);
                 res.status(500).json({ error: 'Payment verification failed.' });
             }
         });
@@ -529,42 +520,31 @@ MongoClient.connect(mongoUri)
         const checkAndResetExpiredPlans = async () => {
             try {
                 const now = new Date();
-
-                // Find all users with expired plans (including all plan types)
+                // Find all users with expired plans that are NOT already free
                 const expiredUsers = await users.find({
                     planExpiryDate: { $exists: true, $lt: now },
-                    accountType: {
-                        $in: [
-                            'monthly', 'yearly', // backward compatibility
-                            'small-business-monthly', 'small-business-yearly',
-                            'hospital-monthly', 'hospital-yearly', // backward compatibility
-                            'large-business-monthly', 'large-business-yearly'
-                        ]
-                    }
+                    accountType: { $ne: 'free' } // Only expire non-free accounts
                 }).toArray();
 
                 if (expiredUsers.length > 0) {
-                    console.log(`🔄 Found ${expiredUsers.length} expired plan(s). Resetting to free tier while preserving custom scans...`);
+                    console.log(`🔄 Found ${expiredUsers.length} expired plan(s). Downgrading to free...`);
 
-                    // Reset each user individually to preserve custom scans
                     for (const user of expiredUsers) {
-                        const customScans = user.customScans || 0;
-                        const newMaxScans = customScans > 0 ? customScans : 0; // If they have custom scans, use those; otherwise 0 free scans
-
+                        // Downgrade to Free Tier
+                        // Rule: Max Scans -> 5 (Free Limit). Custom Scans -> Preserved.
                         await users.updateOne(
                             { _id: user._id },
                             {
                                 $set: {
                                     accountType: 'free',
-                                    planScans: 0,
-                                    maxScans: newMaxScans,
-                                    analysisCount: 0,
+                                    maxScans: 5,        // Reset to free limit
+                                    planUsage: 0,       // Reset plan usage
                                     planExpiryDate: null
                                 }
+                                // Note: customScans are NOT touched.
                             }
                         );
-
-                        console.log(`  ✅ Reset user ${user._id}. Preserved ${customScans} custom scans. New maxScans: ${newMaxScans}`);
+                        console.log(`  ✅ Expired user ${user._id} downgraded to free. Custom Scans: ${user.customScans}`);
                     }
                 }
             } catch (error) {
@@ -574,118 +554,88 @@ MongoClient.connect(mongoUri)
 
         // Run expiry check every hour
         setInterval(checkAndResetExpiredPlans, 60 * 60 * 1000);
-        // Also run on startup
         checkAndResetExpiredPlans();
 
 
-        // --- NEW: BRIDGE TO PYTHON AI SERVICE ---
+        // --- NEW: BRIDGE TO PYTHON AI SERVICE (With Unified Consumption Logic) ---
         app.post('/analyze', authenticateToken, upload.single('imageFile'), async (req, res) => {
             if (!req.file) return res.status(400).json({ error: 'No image file provided.' });
 
             try {
-                // Check if user has scans available
                 const user = req.user;
-                const customScans = user.customScans || 0;
-                const planScans = user.planScans || 0;
-                const maxScans = user.maxScans || 0;
-                const usedScans = user.analysisCount || 0;
+                const maxScans = user.maxScans || 0; // Subscription Limit
+                const usedScans = user.analysisCount || 0; // Total Lifetime Usage (acts as Used Plan Scans)
+                let customScans = user.customScans || 0; // Separate Wallet
 
-                // Calculate total scans - handle both old and new user formats
-                let totalScans;
-                if (customScans > 0 || planScans > 0) {
-                    // New format: use customScans + planScans
-                    totalScans = customScans + planScans;
-                } else {
-                    // Old format: use maxScans directly (for backward compatibility)
-                    totalScans = maxScans;
+                // 1. Calculate Remaining Subscription Scans
+                // Note: analysisCount grows forever. maxScans grows when plans are stacked.
+                // So remaining = max - used is correct for stacked quota systems.
+                const remainingSubscriptionScans = maxScans - usedScans;
+
+                let scanSource = null;
+
+                // 2. PRIORITY 1: Use Subscription Scans
+                if (remainingSubscriptionScans > 0) {
+                    scanSource = 'plan';
+                    console.log(`📊 Using SUBSCRIPTION scan. Remaining Plan Scans: ${remainingSubscriptionScans - 1}`);
                 }
-
-                const remainingScans = totalScans - usedScans;
-
-                if (remainingScans <= 0) {
+                // 3. PRIORITY 2: Fallback to Custom Scans
+                else if (customScans > 0) {
+                    scanSource = 'custom';
+                    console.log(`📊 Plan exhausted. Using CUSTOM scan. Remaining Custom: ${customScans - 1}`);
+                }
+                // 4. FAILURE: No scans left
+                else {
                     return res.status(403).json({
                         error: 'No scans remaining. Please purchase more scans or upgrade your plan.',
-                        customScans,
-                        planScans,
-                        maxScans,
-                        totalScans,
-                        usedScans,
-                        remainingScans
+                        scansInfo: {
+                            subscriptionRemaining: 0,
+                            customRemaining: customScans
+                        }
                     });
                 }
 
+                // Call Python API
                 const formData = new FormData();
                 formData.append('imageFile', req.file.buffer, { filename: req.file.originalname });
                 formData.append('modelId', req.body.modelId);
-
-                // Point to deployed Python Flask server on Render
                 const pythonApiUrl = process.env.PYTHON_AI_URL || 'https://mediscan-ai-server.onrender.com/analyze-image';
 
-                // Axios request with 120-second timeout for cold starts
                 const response = await axios.post(pythonApiUrl, formData, {
                     headers: { ...formData.getHeaders() },
-                    timeout: 120000, // 120 seconds timeout
+                    timeout: 120000,
                     maxContentLength: Infinity,
                     maxBodyLength: Infinity
                 });
 
-                // Log the analysis in the database
+                // Update Database based on Source
+                // Constraint: Always increase usedScans (analysisCount).
+                // Constraint: Only decrease customScans if source was 'custom'.
+                const updateOps = {
+                    $inc: { analysisCount: 1 }
+                };
+
+                if (scanSource === 'custom') {
+                    updateOps.$inc.customScans = -1;
+                }
+
+                await users.updateOne({ _id: req.user._id }, updateOps);
+
+                // Log the analysis
                 await analyses.insertOne({
                     userId: req.user._id, modelId: req.body.modelId, result: response.data.prediction,
                     confidence: response.data.confidence, timestamp: new Date()
                 });
 
-                // SMART SCAN REDUCTION LOGIC
-                // Priority: Use plan scans first (they expire), then custom scans (they don't expire)
-                let newPlanScans = planScans;
-                let newCustomScans = customScans;
-                let newMaxScans;
-
-                // Handle old users (only have maxScans) vs new users (have customScans/planScans)
-                if (customScans > 0 || planScans > 0) {
-                    // New user format: separate tracking
-                    if (planScans > 0) {
-                        // Use plan scan first
-                        newPlanScans = planScans - 1;
-                        console.log(`📊 Used 1 plan scan. Remaining: Plan=${newPlanScans}, Custom=${customScans}`);
-                    } else if (customScans > 0) {
-                        // No plan scans left, use custom scan
-                        newCustomScans = customScans - 1;
-                        console.log(`📊 Used 1 custom scan. Remaining: Plan=0, Custom=${newCustomScans}`);
-                    }
-                    newMaxScans = newPlanScans + newCustomScans;
-                } else {
-                    // Old user format: just decrement maxScans
-                    newMaxScans = maxScans; // Keep maxScans as is, only increment analysisCount
-                    console.log(`📊 Used 1 scan (legacy user). Remaining: ${newMaxScans - (usedScans + 1)}`);
-                }
-
-                // Update user's scan counts
-                const updateData = {
-                    $inc: { analysisCount: 1 }
-                };
-
-                // Only update new fields if user has them
-                if (customScans > 0 || planScans > 0) {
-                    updateData.$set = {
-                        planScans: newPlanScans,
-                        customScans: newCustomScans,
-                        maxScans: newMaxScans
-                    };
-                }
-
-                await users.updateOne({ _id: req.user._id }, updateData);
-
-                // Add remaining scans info to response
                 res.json({
                     ...response.data,
                     scansInfo: {
-                        planScans: newPlanScans,
-                        customScans: newCustomScans,
-                        totalRemaining: newMaxScans - (usedScans + 1),
-                        scanUsed: planScans > 0 ? 'plan' : (customScans > 0 ? 'custom' : 'legacy')
+                        source: scanSource,
+                        subscriptionRemaining: scanSource === 'plan' ? remainingSubscriptionScans - 1 : remainingSubscriptionScans,
+                        customRemaining: scanSource === 'custom' ? customScans - 1 : customScans
                     }
                 });
+
             } catch (error) {
                 console.error('Error calling Python AI service:', error.message);
                 res.status(500).json({ error: 'Failed to analyze image.' });

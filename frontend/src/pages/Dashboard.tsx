@@ -67,7 +67,7 @@ const Dashboard: React.FC = () => {
     return null;
   }
 
-  const scansRemaining = user.maxScans - user.analysisCount;
+  const scansRemaining = user.maxScans - user.analysisCount + user.customScans;
   const usagePercentage = (user.analysisCount / user.maxScans) * 100;
 
   // Filter activities based on selected filter
