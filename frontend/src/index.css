@@ -226,7 +226,9 @@
 }
 
 /* Firefox Scrollbar */
-* {
+/* Firefox Scrollbar */
+html,
+body {
   scrollbar-width: thin;
   scrollbar-color: #3b82f6 #f0f9ff;
 }
@@ -243,4 +245,131 @@ html {
 
 .animation-delay-4000 {
   animation-delay: 4s;
+}
+
+/* Mobile-optimized styles */
+@media (max-width: 768px) {
+
+  /* Better font scaling for mobile */
+  html {
+    font-size: 14px;
+  }
+
+  /* Improved touch targets */
+  button,
+  a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Better spacing for mobile */
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  /* Reduce animation intensity on mobile */
+  .animate-first,
+  .animate-second,
+  .animate-third,
+  .animate-fourth,
+  .animate-fifth {
+    animation-duration: 60s;
+  }
+}
+
+/* Improved responsive text scaling */
+.responsive-text-xs {
+  font-size: clamp(0.75rem, 2vw, 0.875rem);
+}
+
+.responsive-text-sm {
+  font-size: clamp(0.875rem, 2.5vw, 1rem);
+}
+
+.responsive-text-base {
+  font-size: clamp(1rem, 3vw, 1.125rem);
+}
+
+.responsive-text-lg {
+  font-size: clamp(1.125rem, 3.5vw, 1.25rem);
+}
+
+.responsive-text-xl {
+  font-size: clamp(1.25rem, 4vw, 1.5rem);
+}
+
+.responsive-text-2xl {
+  font-size: clamp(1.5rem, 5vw, 2rem);
+}
+
+.responsive-text-3xl {
+  font-size: clamp(1.875rem, 6vw, 2.5rem);
+}
+
+.responsive-text-4xl {
+  font-size: clamp(2rem, 7vw, 3rem);
+}
+
+.responsive-text-5xl {
+  font-size: clamp(2.5rem, 8vw, 3.5rem);
+}
+
+.responsive-text-6xl {
+  font-size: clamp(3rem, 10vw, 4rem);
+}
+
+/* Mobile-friendly card shadows */
+@media (max-width: 768px) {
+  .shadow-xl {
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+
+  .shadow-2xl {
+    box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.15), 0 15px 15px -10px rgba(0, 0, 0, 0.06);
+  }
+}
+
+/* Better mobile navigation */
+.mobile-menu-enter {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.mobile-menu-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+.mobile-menu-exit {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.mobile-menu-exit-active {
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+/* Prevent horizontal scroll on mobile */
+/* Prevent horizontal scroll on mobile */
+@media (max-width: 768px) {
+  body {
+    overflow-x: hidden;
+  }
+}
+
+/* Better mobile padding */
+.mobile-padding {
+  @apply px-4 sm:px-6 lg:px-8;
+}
+
+/* Safe area insets for mobile devices */
+@supports (padding: max(0px)) {
+  body {
+    padding-left: max(0px, env(safe-area-inset-left));
+    padding-right: max(0px, env(safe-area-inset-right));
+  }
 }

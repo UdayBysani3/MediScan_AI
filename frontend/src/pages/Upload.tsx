@@ -156,6 +156,10 @@ const Upload: React.FC = () => {
       setCurrentStep('analysis');
     } else {
       setCurrentStep('upload');
+      // Show demo modal by default for image-based models
+      if (model.id !== 'cbc-analysis') {
+        setShowDemoModal(true);
+      }
     }
   };
 
