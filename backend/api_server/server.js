@@ -302,6 +302,7 @@ MongoClient.connect(mongoUri)
                     planUsage: 0,     // Current plan usage
                     maxScans: 5,      // Plan limit
                     customScans: 0,   // Custom balance
+                    planScans: 0,     // Plan specific quota tracker
                     createdAt: new Date()
                 };
 
@@ -320,7 +321,8 @@ MongoClient.connect(mongoUri)
                     token,
                     user: {
                         id: result.insertedId, name, mobile,
-                        accountType: 'free', analysisCount: 0, maxScans: 5
+                        accountType: 'free', analysisCount: 0, maxScans: 5,
+                        customScans: 0, planScans: 0
                     }
                 });
 
@@ -346,7 +348,8 @@ MongoClient.connect(mongoUri)
                     token,
                     user: {
                         id: user._id, name: user.name, mobile: user.mobile,
-                        accountType: user.accountType, analysisCount: user.analysisCount, maxScans: user.maxScans
+                        accountType: user.accountType, analysisCount: user.analysisCount, maxScans: user.maxScans,
+                        customScans: user.customScans || 0, planScans: user.planScans || 0
                     }
                 });
             } catch (error) {
@@ -369,6 +372,8 @@ MongoClient.connect(mongoUri)
                     accountType: user.accountType,
                     analysisCount: user.analysisCount,
                     maxScans: user.maxScans,
+                    customScans: user.customScans || 0,
+                    planScans: user.planScans || 0,
                     planExpiryDate: user.planExpiryDate || null,
                     planPurchaseDate: user.planPurchaseDate || null
                 });

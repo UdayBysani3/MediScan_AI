@@ -66,9 +66,24 @@ const Dashboard: React.FC = () => {
     navigate('/login');
     return null;
   }
+  const maxScans = user.maxScans ?? 0;
+  const analysisCount = user.analysisCount ?? 0;
+  const customScans = user.customScans ?? 0;
 
-  const scansRemaining = user.maxScans - user.analysisCount + user.customScans;
-  const usagePercentage = (user.analysisCount / user.maxScans) * 100;
+  const isUnlimited = maxScans === -1;
+
+  // Calculate remaining scans safely
+  let scansRemaining: string | number;
+  if (isUnlimited) {
+    scansRemaining = 'Unlimited';
+  } else {
+    // Subscription remaining (capped at 0 min) + Custom scans
+    const subscriptionRemaining = Math.max(0, maxScans - analysisCount);
+    scansRemaining = subscriptionRemaining + customScans;
+  }
+
+  // Calculate usage percentage safely
+  const usagePercentage = isUnlimited ? 0 : Math.min(100, (analysisCount / (maxScans || 1)) * 100);
 
   // Filter activities based on selected filter
   const filteredActivity = recentActivity.filter(activity => {
@@ -185,16 +200,9 @@ const Dashboard: React.FC = () => {
               <CardItem translateZ="60" className="text-4xl font-extrabold text-slate-900 mb-3">
                 {scansRemaining}
               </CardItem>
-              {user.customScans !== undefined && user.planScans !== undefined && (
-                <CardItem translateZ="30" className="text-xs text-slate-600 mb-2 space-y-0.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-blue-600 font-medium">Plan Scans:</span>
-                    <span className="font-semibold">{user.planScans || 0}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-green-600 font-medium">Custom Scans:</span>
-                    <span className="font-semibold">{user.customScans || 0}</span>
-                  </div>
+              {customScans > 0 && (
+                <CardItem translateZ="30" className="text-xs font-semibold text-green-600 mb-3">
+                  including {customScans} Custom Scans
                 </CardItem>
               )}
               <CardItem translateZ="40" className="w-full">
