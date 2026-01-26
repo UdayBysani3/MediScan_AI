@@ -24,7 +24,9 @@ import {
   Mail,
   Phone,
   X,
-  Users
+  Users,
+  Menu,
+  LogIn
 } from 'lucide-react';
 
 const Navbar: React.FC = () => {
@@ -32,6 +34,7 @@ const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [showContactModal, setShowContactModal] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -320,9 +323,96 @@ const Navbar: React.FC = () => {
                   </motion.div>
                 </div>
               )}
+              {/* Mobile Menu Toggle */}
+              <div className="md:hidden ml-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                  className="text-gray-700"
+                >
+                  {isMobileMenuOpen ? (
+                    <X className="h-6 w-6" />
+                  ) : (
+                    <Menu className="h-6 w-6" />
+                  )}
+                </Button>
+              </div>
             </div>
           </div>
         </div>
+
+        {/* Mobile Navigation Menu */}
+        <AnimatePresence>
+          {isMobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="md:hidden bg-white border-t border-slate-100 overflow-hidden"
+            >
+              <div className="px-4 py-4 space-y-2">
+                {navItems.map((item, idx) => (
+                  <motion.button
+                    key={idx}
+                    onClick={() => {
+                      navigate(item.path);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={cn(
+                      "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-300",
+                      location.pathname === item.path
+                        ? "bg-gradient-to-r from-blue-50 to-green-50 text-blue-700"
+                        : "text-gray-700 hover:bg-gray-50 hover:text-blue-600"
+                    )}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <div className={cn(
+                      "p-2 rounded-lg",
+                      location.pathname === item.path
+                        ? "bg-white text-blue-600 shadow-sm"
+                        : "bg-gray-100 text-gray-500"
+                    )}>
+                      {item.icon}
+                    </div>
+                    {item.name}
+                  </motion.button>
+                ))}
+
+                {/* Mobile Contact Button */}
+                <motion.button
+                  onClick={() => {
+                    setShowContactModal(true);
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-all duration-300"
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <div className="p-2 rounded-lg bg-gray-100 text-gray-500">
+                    <Users className="h-4 w-4" />
+                  </div>
+                  Contact Us
+                </motion.button>
+
+                {!user && (
+                  <motion.button
+                    onClick={() => {
+                      navigate('/login');
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-all duration-300"
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <div className="p-2 rounded-lg bg-gray-100 text-gray-500">
+                      <LogIn className="h-4 w-4" />
+                    </div>
+                    Sign In
+                  </motion.button>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.nav>
 
       {/* Contact Us Modal - Rendered at page level */}
